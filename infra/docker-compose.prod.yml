@@ -1,0 +1,24 @@
+# Продакшен-оверлей для общего сервера (рядом с другими проектами):
+#   docker compose -p justina -f infra/docker-compose.yml -f infra/docker-compose.prod.yml up -d --build
+# Наружу публикуется только веб на 127.0.0.1:8180 — дальше его отдаёт уже стоящий на сервере nginx/Caddy
+# (infra/deploy/). База и API в сеть хоста не выходят.
+services:
+  db:
+    ports: !reset []
+    restart: always
+  migrate:
+    restart: "no"
+  api:
+    ports: !reset []
+    restart: always
+  collector:
+    restart: always
+  guard-worker:
+    restart: always
+  bot:
+    restart: always
+  assist-worker:
+    restart: always
+  web:
+    ports: !override ["127.0.0.1:8180:3000"]
+    restart: always
