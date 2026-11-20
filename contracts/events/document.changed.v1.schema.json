@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "document.changed.v1.schema.json",
   "title": "document.changed",
-  "description": "Новая версия документа (другой хеш), кроме смены статуса",
+  "description": "Новая версия документа (другой хеш). Если поменялся status — дополнительно document.status_changed",
   "allOf": [
     {
       "$ref": "envelope.schema.json"

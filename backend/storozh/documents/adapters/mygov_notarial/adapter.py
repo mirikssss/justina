@@ -6,6 +6,7 @@ from storozh.shared.contracts import NormalizedDocument
 
 class MyGovNotarialAdapter:
     source_id = "mygov.notarial_history"
+    title = "my.gov.uz · история нотариальных действий"
     poll_interval_s = 600
     complete = True
 

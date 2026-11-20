@@ -24,6 +24,7 @@ dependencies = [
     "sentence-transformers>=3.3",
     "torch>=2.5",
     "anthropic>=0.75",
+    "cssselect>=1.2",
 ]
 
 [dependency-groups]
