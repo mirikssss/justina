@@ -1,6 +1,6 @@
 import { Button, Card } from "@/components/mygov";
 
-// TODO(Разработчик 3): POST /auth/telegram/start -> ссылка на бота -> /auth/callback
+// TODO(Разработчик 2): POST /auth/telegram/start -> ссылка на бота -> /auth/callback
 export function LoginScreen() {
   return (
     <div className="mx-auto mt-24 max-w-md">

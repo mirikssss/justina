@@ -1,12 +1,12 @@
 # contracts/ — фиксируем первыми, втроём
 
 Пока контракт не влит, код по нему не пишем. После — каждый работает независимо:
-фронтенд берёт ответы из Prism-мока (`docker compose --profile mock up mock`, порт 4010),
+фронтенд берёт ответы из Prism-мока (`make mock`, порт 4010),
 бэкенд реализует ровно эти пути и схемы.
 
 | Файл | Что | Зеркало в коде |
 |---|---|---|
-| `openapi.yaml` | HTTP API для веба | роутеры `*/api.py`, типы `web/lib/api/schema.d.ts` (`npm run gen:api`) |
+| `openapi.yaml` | HTTP API для веба | роутеры `*/api.py`, типы `web/lib/api/schema.d.ts` (`make gen-api`) |
 | `schemas/normalized_document.schema.json` | Нормализованный документ | `storozh/shared/contracts.py` |
 | `schemas/source_snapshot.schema.json` | Снимок источника — единственный вход данных | `storozh/shared/contracts.py` |
 | `events/envelope.schema.json` | Конверт события | `storozh/shared/events.py` |

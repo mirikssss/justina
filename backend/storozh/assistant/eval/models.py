@@ -1,9 +1,9 @@
 """Сравнение моделей Claude на агенте /ask: качество ответа vs цена.
 
-  uv run python -m eval.models run --models claude-haiku-5-5 --n 2       # калибровка цены
-  uv run python -m eval.models run --budget 1.2                           # все модели, лимит $ на модель
-  uv run python -m eval.models judge                                      # оценка ответов судьёй
-  uv run python -m eval.models report
+  uv run python -m storozh.assistant.eval.models run --models claude-haiku-5-5 --n 2       # калибровка цены
+  uv run python -m storozh.assistant.eval.models run --budget 1.2                           # все модели, лимит $ на модель
+  uv run python -m storozh.assistant.eval.models judge                                      # оценка ответов судьёй
+  uv run python -m storozh.assistant.eval.models report
 
 Результаты кэшируются в eval/results/<model>.jsonl — повторный запуск не платит дважды.
 """

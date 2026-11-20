@@ -1,6 +1,6 @@
 import { Card, PageHeader } from "@/components/mygov";
 
-// Разработчик 2: Список по важности, кнопки «Это я» и «Это не я».
+// Разработчик 3: Список по важности, кнопки «Это я» и «Это не я».
 export function AlertsPage() {
   return (
     <>

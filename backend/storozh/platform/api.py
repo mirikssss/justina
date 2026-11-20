@@ -7,8 +7,8 @@ from storozh.shared.auth import Citizen, current_citizen
 router = APIRouter(tags=["platform"])
 
 
-@router.get("/health")
-async def health():
+@router.get("/healthz")
+async def healthz():
     return {"status": "ok"}
 
 
@@ -36,3 +36,13 @@ async def me(citizen: Citizen = Depends(current_citizen)):
 async def stream(citizen: Citizen = Depends(current_citizen)):
     """SSE: LISTEN storozh_outbox, фильтр по citizen_id; document.*, alert.created, action.updated, summary.ready."""
     raise NotImplementedError("GET /stream")
+
+
+@router.get("/audit")
+async def audit(cursor: str | None = None, citizen: Citizen = Depends(current_citizen)):
+    raise NotImplementedError("GET /audit")
+
+
+@router.get("/audit/verify")
+async def audit_verify():
+    raise NotImplementedError("GET /audit/verify")

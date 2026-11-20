@@ -29,7 +29,7 @@ class RuleContext:
     extra: dict = field(default_factory=dict)
 
 
-Rule = Callable[[Event, NormalizedDocument, RuleContext], AlertDraft | None]
+Rule = Callable[[Event, NormalizedDocument | None, RuleContext], AlertDraft | None]  # None: у события нет документа
 RULES: dict[str, Rule] = {}
 
 
@@ -43,5 +43,5 @@ def rule(rule_id: str) -> Callable[[Rule], Rule]:
     return register
 
 
-def evaluate(event: Event, doc: NormalizedDocument, ctx: RuleContext) -> list[AlertDraft]:
+def evaluate(event: Event, doc: NormalizedDocument | None, ctx: RuleContext) -> list[AlertDraft]:
     return [d for fn in RULES.values() if (d := fn(event, doc, ctx)) is not None]

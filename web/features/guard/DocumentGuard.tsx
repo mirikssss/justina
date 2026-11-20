@@ -1,6 +1,6 @@
 import { Button, Card } from "@/components/mygov";
 
-// Разработчик 2: тревоги по документу, «Отозвать» (POST /actions -> код в Telegram -> модалка), «Скачать заявление по ст. 31».
+// Разработчик 3: тревоги по документу, «Отозвать» (POST /guard/actions -> код в Telegram -> модалка), «Скачать заявление по ст. 31».
 export function DocumentGuard({ documentId }: { documentId: string }) {
   return (
     <Card title="Защита">

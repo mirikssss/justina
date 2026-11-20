@@ -6,7 +6,7 @@
   "subject": "uz:notarius:poa:2026-0001234",
   "citizen_id": "00000000-0000-0000-0000-000000000001",
   "occurred_at": "2026-11-21T10:00:20+05:00",
-  "dedupe_key": "uz:notarius:poa:2026-0001234:1:document.created",
+  "dedupe_key": "uz:notarius:poa:2026-0001234:1:created",
   "data": {
     "document_id": "3f2e1d0c-9b8a-4765-8432-1f0e9d8c7b6a",
     "version_no": 1,

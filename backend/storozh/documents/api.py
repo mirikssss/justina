@@ -13,7 +13,8 @@ internal = APIRouter(tags=["internal"], dependencies=[Depends(internal_request)]
 
 
 @router.get("/documents")
-async def list_documents(kind: str | None = None, status: str | None = None, cursor: str | None = None,
+async def list_documents(kind: str | None = None, status: str | None = None, q: str | None = None,
+                         cursor: str | None = None,
                          citizen: Citizen = Depends(current_citizen)):
     raise NotImplementedError("GET /documents")
 
@@ -36,6 +37,12 @@ async def version_diff(document_id: UUID, version_no: int, citizen: Citizen = De
 @router.get("/sources")
 async def list_sources(citizen: Citizen = Depends(current_citizen)):
     raise NotImplementedError("GET /sources")
+
+
+@router.post("/sources/{source_id}/refresh", status_code=202)
+async def refresh_source(source_id: str, citizen: Citizen = Depends(current_citizen)):
+    """Внеочередной опрос источника, не чаще раза в 20 с."""
+    raise NotImplementedError("POST /sources/{id}/refresh")
 
 
 @internal.post("/internal/ingest/snapshots", status_code=202)

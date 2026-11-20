@@ -1,6 +1,6 @@
 import { Card, PageHeader } from "@/components/mygov";
 
-// Разработчик 2: шаги состояния вживую по SSE (action.updated), в конце — «Подтверждено источником: отозвана» и скриншот.
+// Разработчик 3: шаги состояния вживую по SSE (action.updated), в конце — «Подтверждено источником: отозвана» и скриншот.
 export function ActionPage({ id }: { id: string }) {
   return (
     <>

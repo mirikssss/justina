@@ -3,7 +3,7 @@ import { DocumentAssistant } from "@/features/assistant";
 import { DocumentGuard } from "@/features/guard";
 
 // Разработчик 1: реквизиты, стороны, объект, статус, история версий с подсветкой изменённых полей.
-// Два слота принадлежат другим контекстам: <DocumentGuard/> (Разработчик 2) и <DocumentAssistant/> (Разработчик 3).
+// Два слота принадлежат другим контекстам: <DocumentGuard/> (Разработчик 3) и <DocumentAssistant/> (Разработчик 2).
 export function DocumentPage({ id }: { id: string }) {
   return (
     <>

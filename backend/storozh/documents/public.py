@@ -3,6 +3,7 @@
 Сейчас — сигнатуры из ТЗ; реализации подключает Разработчик 1.
 """
 
+from contextlib import AbstractAsyncContextManager
 from typing import Protocol
 from uuid import UUID
 
@@ -14,9 +15,13 @@ __all__ = ["BrowserSession", "NormalizedDocument", "SessionProvider", "get_docum
 
 
 class SessionProvider(Protocol):
-    """Сессия выдаётся под pg_advisory_lock по аккаунту: опрос и отзыв никогда не идут параллельно."""
+    """Сессия выдаётся под pg_advisory_lock по аккаунту: опрос и отзыв никогда не идут параллельно.
 
-    async def get(self, citizen_id: UUID, source: str) -> BrowserSession: ...
+        async with documents.public.session_provider().get(citizen_id) as session:
+            ...
+    """
+
+    def get(self, citizen_id: UUID, provider: str = "oneid") -> AbstractAsyncContextManager[BrowserSession]: ...
 
 
 async def get_document(document_id: UUID) -> NormalizedDocument:
