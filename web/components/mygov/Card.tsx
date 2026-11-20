@@ -1,9 +1,18 @@
 import type { ReactNode } from "react";
 
-export function Card({ title, children }: { title?: ReactNode; children: ReactNode }) {
+import { Icon, type IconName } from "./Icon";
+
+export function Card({ title, icon, tag, className = "", children }:
+  { title?: ReactNode; icon?: IconName; tag?: ReactNode; className?: string; children: ReactNode }) {
   return (
-    <section className="rounded-card border border-border bg-surface p-5 shadow-card">
-      {title ? <h2 className="mb-3 text-base font-semibold">{title}</h2> : null}
+    <section className={`card ${className}`}>
+      {title ? (
+        <div className="ch">
+          {icon ? <Icon name={icon} /> : null}
+          <h3>{title}</h3>
+          {tag ? <span className="tagai">{tag}</span> : null}
+        </div>
+      ) : null}
       {children}
     </section>
   );

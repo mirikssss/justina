@@ -2,6 +2,7 @@ import type { Config } from "tailwindcss";
 
 // Тема ссылается на CSS-переменные из components/mygov/tokens.css — менять цвета только там.
 const config: Config = {
+  corePlugins: { preflight: false }, // базовые стили задаёт mygov.css (как в макете)
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./features/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -13,6 +14,9 @@ const config: Config = {
         fg: "var(--fg)",
         muted: "var(--muted)",
         accent: "var(--accent)",
+        blue: "var(--blue)",
+        teal: "var(--teal)",
+        faint: "var(--faint)",
         good: "var(--good)",
         "good-bg": "var(--good-bg)",
         warn: "var(--warn)",

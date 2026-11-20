@@ -1,11 +1,6 @@
 @import "../components/mygov/tokens.css";
+@import "../components/mygov/mygov.css";
 
-@tailwind base;
+/* preflight Tailwind выключен (tailwind.config.ts): базовые стили — из mygov.css (как у портала) */
 @tailwind components;
 @tailwind utilities;
-
-body {
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--ff);
-}

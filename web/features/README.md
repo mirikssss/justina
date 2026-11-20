@@ -9,4 +9,8 @@
 | `platform/` | Разработчик 2 | `/login` |
 | `documents/` | Разработчик 1 | `/documents`, `/documents/[id]`, `/sources` |
 | `guard/` | Разработчик 3 | `/alerts`, `/family`, `/actions/[id]`, слот `<DocumentGuard/>` |
-| `assistant/` | Разработчик 2 | слот `<DocumentAssistant/>` |
+| `assistant/` | Разработчик 2 | слоты `<AssistantSummary/>` и `<AssistantChat/>` в карточке документа |
+
+Стиль — как у живого my.gov.uz: токены сняты с портала (`components/mygov/tokens.css`), каркас повторяет его
+меню, шапку и брейкпоинты (`mygov.css`). Новые блоки собирайте из классов кита и токенов, без своих цветов.
+Демо-данные для фронта без живого кабинета: `cd backend && uv run python -m storozh documents seed`.

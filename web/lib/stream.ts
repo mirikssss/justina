@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-import { API_URL } from "./api/client";
+import { API_BASE } from "./api/client";
 
 export type StreamEventType =
   | "document.created"
@@ -19,7 +19,7 @@ export type StreamEvent = { id: string; type: StreamEventType; subject: string; 
 export function useStream(types: StreamEventType[], onEvent: (e: StreamEvent) => void) {
   const key = types.join(",");
   useEffect(() => {
-    const es = new EventSource(`${API_URL}/stream`, { withCredentials: true });
+    const es = new EventSource(`${API_BASE}/stream`, { withCredentials: true });
     const listener = (msg: MessageEvent) => onEvent(JSON.parse(msg.data) as StreamEvent);
     for (const t of types) es.addEventListener(t, listener);
     return () => es.close();

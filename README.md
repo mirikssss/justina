@@ -68,7 +68,7 @@ make check                                # ruff + import-linter + pytest
 
 ```bash
 make web                                  # http://localhost:3000
-make mock                                 # Prism-мок :4010; в web/.env.local NEXT_PUBLIC_API_URL=http://localhost:4010
+make mock                                 # Prism-мок :4010; затем API_PROXY_URL=http://localhost:4010 make web
 ```
 
 После правки `contracts/openapi.yaml` запустите `make gen-api` и закоммитьте `web/lib/api/schema.d.ts`.
