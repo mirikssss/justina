@@ -1,0 +1,45 @@
+{
+  "snapshot_id": "6f1c2c1e-6a43-4f7e-9d3b-1a2b3c4d5e6f",
+  "citizen_id": "00000000-0000-0000-0000-000000000001",
+  "source": "mygov.car_poa",
+  "fetched_at": "2026-11-21T10:00:00+05:00",
+  "complete": true,
+  "documents": [
+    {
+      "uri": "uz:notarius:poa:2026-0001234",
+      "kind": "poa_car",
+      "source": "mygov.car_poa",
+      "title": "Доверенность на автомобиль",
+      "status": "active",
+      "owner_role": "principal",
+      "parties": [
+        {
+          "role": "principal",
+          "name_masked": "М***л А.",
+          "pinfl_hash": "hmac-of-pinfl-a"
+        },
+        {
+          "role": "agent",
+          "name_masked": "Б***р К.",
+          "pinfl_hash": "hmac-of-pinfl-b"
+        }
+      ],
+      "object": {
+        "type": "vehicle",
+        "id_masked": "01 *** 45",
+        "label": "Chevrolet Cobalt"
+      },
+      "issued_at": "2026-11-21",
+      "valid_until": "2026-12-21",
+      "issuer": {
+        "type": "mygov",
+        "name": "my.gov.uz"
+      },
+      "fields": {},
+      "source_ref": {
+        "external_id": "123456",
+        "url": "https://my.gov.uz/..."
+      }
+    }
+  ]
+}

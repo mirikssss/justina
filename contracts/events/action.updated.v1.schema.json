@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "action.updated.v1.schema.json",
+  "title": "action.updated",
+  "description": "Действие перешло в новое состояние",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "action.updated"
+    },
+    "schema": {
+      "const": "action.updated/v1"
+    },
+    "producer": {
+      "const": "guard"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "action_id",
+        "type",
+        "status"
+      ],
+      "properties": {
+        "action_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "proposed",
+            "awaiting_confirmation",
+            "confirmed",
+            "executing",
+            "verifying",
+            "done",
+            "failed",
+            "expired"
+          ]
+        },
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

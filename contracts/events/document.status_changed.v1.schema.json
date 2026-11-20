@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "document.status_changed.v1.schema.json",
+  "title": "document.status_changed",
+  "description": "Изменился статус документа",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "document.status_changed"
+    },
+    "schema": {
+      "const": "document.status_changed/v1"
+    },
+    "producer": {
+      "const": "documents"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_id",
+        "version_no",
+        "prev_version_no",
+        "changed_fields",
+        "status_from",
+        "status_to"
+      ],
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "version_no": {
+          "type": "integer"
+        },
+        "prev_version_no": {
+          "type": "integer"
+        },
+        "changed_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status_from": {
+          "type": "string"
+        },
+        "status_to": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

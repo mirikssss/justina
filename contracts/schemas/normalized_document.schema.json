@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "normalized_document.schema.json",
+  "title": "NormalizedDocument",
+  "description": "Документ в одном виде для всех источников. ПИНФЛ, паспорт, номер авто и телефон — только маски и HMAC.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["uri", "kind", "source", "title", "status", "owner_role", "source_ref"],
+  "properties": {
+    "uri": {"type": "string", "pattern": "^uz:(notarius|kadastr|mvd|katm|mib|mehnat):(act|poa|ban|object|vehicle|loan|case|contract):\\S+$"},
+    "kind": {"enum": ["notarial_act", "poa_notarial", "poa_car", "ban", "real_estate_right", "vehicle", "loan", "enforcement_case", "labor_contract"]},
+    "source": {"type": "string", "pattern": "^[a-z0-9_]+\\.[a-z0-9_]+$"},
+    "title": {"type": "string"},
+    "status": {"enum": ["active", "completed", "revoked", "expired", "unknown"]},
+    "owner_role": {"enum": ["principal", "agent", "party", "debtor", "employee"]},
+    "parties": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "name_masked"],
+        "properties": {
+          "role": {"type": "string"},
+          "name_masked": {"type": "string"},
+          "pinfl_hash": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "object": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {"type": "string"},
+        "id_masked": {"type": ["string", "null"]},
+        "label": {"type": ["string", "null"]}
+      }
+    },
+    "issued_at": {"type": ["string", "null"], "format": "date"},
+    "valid_until": {"type": ["string", "null"], "format": "date"},
+    "issuer": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {"type": {"type": "string"}, "name": {"type": ["string", "null"]}}
+    },
+    "fields": {"type": "object"},
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["external_id"],
+      "properties": {"external_id": {"type": "string"}, "url": {"type": ["string", "null"]}}
+    }
+  }
+}

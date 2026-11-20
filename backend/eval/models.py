@@ -16,10 +16,10 @@ from pathlib import Path
 import anthropic
 import typer
 
-from app.core.config import settings
-from app.modules.corpus.service import articles_by_keys
-from app.modules.corpus.text import detect_lang
-from app.modules.reasoning.service import answer
+from storozh.assistant.llm.service import answer
+from storozh.assistant.rag.corpus.service import articles_by_keys
+from storozh.assistant.rag.corpus.text import detect_lang
+from storozh.shared.config import settings
 
 app = typer.Typer()
 HERE = Path(__file__).parent
@@ -79,7 +79,7 @@ def run(models: list[str] = typer.Option(DEFAULT_MODELS), n: int = 100, effort: 
         budget: float = 1.2, workers: int = 3):
     """Прогнать агента. budget — потолок $ на одну модель (останавливается, когда превышен)."""
     qs = golden()[:n]
-    from app.modules.retrieval.service import search
+    from storozh.assistant.rag.retrieval.service import search
     search("прогрев модели эмбеддингов")  # загрузить модель до запуска потоков
     for model in models:
         rows = load(model)

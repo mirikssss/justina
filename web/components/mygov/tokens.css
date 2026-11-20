@@ -1,0 +1,23 @@
+/* Дизайн-токены MyGov (Разработчик 3).
+   Стартовые значения взяты из frontend-mockup/; заменить на снятые в DevTools с настоящего my.gov.uz:
+   цвета, шрифт, радиусы, отступы, тени, сетка. Компоненты и Tailwind читают только эти переменные. */
+:root {
+  --bg: #f2f4f8;
+  --surface: #ffffff;
+  --surface-2: #eef1f6;
+  --border: #dde3ec;
+  --fg: #101826;
+  --muted: #5c6880;
+  --accent: #2f6df6;
+  --good: #1f9d57;
+  --good-bg: #e4f5ec;
+  --warn: #c8821a;
+  --warn-bg: #fbf0dd;
+  --crit: #d8453b;
+  --crit-bg: #fbe6e4;
+  --info-bg: #e7f0ff;
+  --radius-card: 12px;
+  --radius-ctl: 8px;
+  --shadow: 0 1px 3px rgba(16, 24, 38, 0.06), 0 8px 24px rgba(16, 24, 38, 0.05);
+  --ff: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}

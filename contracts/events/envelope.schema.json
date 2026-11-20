@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "envelope.schema.json",
+  "title": "Event envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "schema", "producer", "subject", "citizen_id", "occurred_at", "dedupe_key", "data"],
+  "properties": {
+    "id": {"type": "string", "format": "uuid"},
+    "type": {"type": "string"},
+    "schema": {"type": "string", "pattern": "^[a-z_.]+/v[0-9]+$"},
+    "producer": {"enum": ["documents", "guard", "assistant", "platform"]},
+    "subject": {"type": "string", "description": "URI документа, id тревоги или действия"},
+    "citizen_id": {"type": "string", "format": "uuid"},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "dedupe_key": {"type": "string"},
+    "data": {"type": "object"}
+  }
+}

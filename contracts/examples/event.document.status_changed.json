@@ -1,0 +1,20 @@
+{
+  "id": "0b9c7f2a-1d2e-4f3a-8b4c-5d6e7f8a9b0c",
+  "type": "document.status_changed",
+  "schema": "document.status_changed/v1",
+  "producer": "documents",
+  "subject": "uz:notarius:poa:2026-0001234",
+  "citizen_id": "00000000-0000-0000-0000-000000000001",
+  "occurred_at": "2026-11-21T10:02:00+05:00",
+  "dedupe_key": "uz:notarius:poa:2026-0001234:3:document.status_changed",
+  "data": {
+    "document_id": "3f2e1d0c-9b8a-4765-8432-1f0e9d8c7b6a",
+    "version_no": 3,
+    "prev_version_no": 2,
+    "changed_fields": [
+      "status"
+    ],
+    "status_from": "active",
+    "status_to": "revoked"
+  }
+}

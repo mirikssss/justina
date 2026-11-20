@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "source_snapshot.schema.json",
+  "title": "SourceSnapshot",
+  "description": "Единственный вход данных: POST /internal/ingest/snapshots, подпись HMAC-SHA256 в X-Signature.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["snapshot_id", "citizen_id", "source", "fetched_at", "complete", "documents"],
+  "properties": {
+    "snapshot_id": {"type": "string", "format": "uuid"},
+    "citizen_id": {"type": "string", "format": "uuid"},
+    "source": {"type": "string", "pattern": "^[a-z0-9_]+\\.[a-z0-9_]+$"},
+    "fetched_at": {"type": "string", "format": "date-time"},
+    "complete": {"type": "boolean", "description": "true — в снимке весь список; только тогда пропажа записи = document.disappeared (после двух снимков подряд)"},
+    "documents": {"type": "array", "items": {"$ref": "normalized_document.schema.json"}}
+  }
+}

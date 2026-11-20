@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "document.created.v1.schema.json",
+  "title": "document.created",
+  "description": "Новый документ (URI впервые встретился)",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "document.created"
+    },
+    "schema": {
+      "const": "document.created/v1"
+    },
+    "producer": {
+      "const": "documents"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_id",
+        "version_no",
+        "kind",
+        "owner_role"
+      ],
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "version_no": {
+          "const": 1
+        },
+        "kind": {
+          "type": "string"
+        },
+        "owner_role": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

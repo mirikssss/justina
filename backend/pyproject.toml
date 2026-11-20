@@ -1,23 +1,50 @@
 [project]
-name = "justina-backend"
+name = "storozh"
 version = "0.1.0"
+description = "Сторож сделок: модуль «Мои документы» для MyGov"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
     "pydantic-settings>=2.6",
     "psycopg[binary,pool]>=3.2",
     "pgvector>=0.3",
     "httpx>=0.28",
     "lxml>=5.3",
     "typer>=0.15",
+    "sse-starlette>=2.1",
+    "cryptography>=43",
+    # documents: сборщик
+    "playwright>=1.48",
+    "apscheduler>=3.10,<4",
+    # guard: бот и PDF
+    "aiogram>=3.13",
+    # assistant: RAG и LLM
     "sentence-transformers>=3.3",
     "torch>=2.5",
     "anthropic>=0.75",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "import-linter>=2.1",
+    "ruff>=0.8",
+    "jsonschema>=4.23",
+    "pyyaml>=6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["storozh"]
+
 [tool.uv]
-package = false
+package = true
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
@@ -27,19 +54,128 @@ explicit = true
 [tool.uv.sources]
 torch = { index = "pytorch-cpu" }
 
-[dependency-groups]
-dev = ["pytest>=8.3", "import-linter>=2.1"]
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
 
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["eval/results"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+ignore = ["B008", "E501", "B905"]  # B008: Depends() — идиома FastAPI; длину строк держит line-length форматтера
+
+[tool.ruff.lint.per-file-ignores]
+"eval/*" = ["B023"]
+
+# --- Границы контекстов: проверяет `uv run lint-imports` (и CI) ---
 [tool.importlinter]
-root_package = "app"
+root_package = "storozh"
+include_external_packages = false
 
 [[tool.importlinter.contracts]]
-name = "Modules talk only through service.py"
+name = "documents: чужие контексты только через public.py"
 type = "forbidden"
 allow_indirect_imports = true
-source_modules = ["app.modules.retrieval", "app.modules.reasoning"]
+source_modules = ["storozh.documents"]
 forbidden_modules = [
-    "app.modules.corpus.parser",
-    "app.modules.corpus.lexuz",
-    "app.modules.corpus.repo",
+    "storozh.guard.domain",
+    "storozh.guard.adapters",
+    "storozh.guard.ports",
+    "storozh.guard.service",
+    "storozh.guard.api",
+    "storozh.guard.worker",
+    "storozh.guard.bot",
+    "storozh.assistant.rag",
+    "storozh.assistant.llm",
+    "storozh.assistant.pii",
+    "storozh.assistant.service",
+    "storozh.assistant.api",
+    "storozh.assistant.worker",
+    "storozh.platform.service",
+    "storozh.platform.api",
+    "storozh.platform.domain",
 ]
+
+[[tool.importlinter.contracts]]
+name = "guard: чужие контексты только через public.py"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["storozh.guard"]
+forbidden_modules = [
+    "storozh.documents.domain",
+    "storozh.documents.adapters",
+    "storozh.documents.ports",
+    "storozh.documents.service",
+    "storozh.documents.api",
+    "storozh.documents.worker",
+    "storozh.assistant.rag",
+    "storozh.assistant.llm",
+    "storozh.assistant.pii",
+    "storozh.assistant.service",
+    "storozh.assistant.api",
+    "storozh.assistant.worker",
+    "storozh.platform.service",
+    "storozh.platform.api",
+    "storozh.platform.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "assistant: чужие контексты только через public.py"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["storozh.assistant"]
+forbidden_modules = [
+    "storozh.documents.domain",
+    "storozh.documents.adapters",
+    "storozh.documents.ports",
+    "storozh.documents.service",
+    "storozh.documents.api",
+    "storozh.documents.worker",
+    "storozh.guard.domain",
+    "storozh.guard.adapters",
+    "storozh.guard.ports",
+    "storozh.guard.service",
+    "storozh.guard.api",
+    "storozh.guard.worker",
+    "storozh.guard.bot",
+    "storozh.platform.service",
+    "storozh.platform.api",
+    "storozh.platform.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "platform: чужие контексты только через public.py"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["storozh.platform"]
+forbidden_modules = [
+    "storozh.documents.domain",
+    "storozh.documents.adapters",
+    "storozh.documents.ports",
+    "storozh.documents.service",
+    "storozh.documents.api",
+    "storozh.documents.worker",
+    "storozh.guard.domain",
+    "storozh.guard.adapters",
+    "storozh.guard.ports",
+    "storozh.guard.service",
+    "storozh.guard.api",
+    "storozh.guard.worker",
+    "storozh.guard.bot",
+    "storozh.assistant.rag",
+    "storozh.assistant.llm",
+    "storozh.assistant.pii",
+    "storozh.assistant.service",
+    "storozh.assistant.api",
+    "storozh.assistant.worker",
+]
+
+[[tool.importlinter.contracts]]
+name = "shared не знает о контекстах"
+type = "forbidden"
+source_modules = ["storozh.shared"]
+forbidden_modules = ["storozh.documents", "storozh.guard", "storozh.assistant", "storozh.platform"]

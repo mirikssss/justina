@@ -1,0 +1,651 @@
+openapi: 3.1.0
+info:
+  title: Сторож сделок API
+  version: 0.1.0
+  description: |
+    Контракт между фронтендом и бэкендом. Меняется только PR с двумя апрувами (см. contracts/README.md).
+    Ошибки — application/problem+json (RFC 9457), списки — курсорная пагинация, все ответы несут X-Request-Id.
+    Фронтенд во время разработки ходит в Prism-мок по этому файлу (docker compose --profile mock up).
+servers:
+  - url: http://localhost:8000
+    description: живой API
+  - url: http://localhost:4010
+    description: Prism-мок
+
+tags:
+  - name: platform
+  - name: documents
+  - name: guard
+  - name: assistant
+  - name: internal
+
+paths:
+  # ---------------- Платформа (Разработчик 3) ----------------
+  /health:
+    get:
+      tags: [platform]
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {type: object, properties: {status: {const: ok}}}
+  /auth/telegram/start:
+    post:
+      tags: [platform]
+      operationId: authTelegramStart
+      summary: Начать вход — ссылка на бота с login_<nonce>
+      responses:
+        "200":
+          description: Ссылка для перехода в Telegram
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/LoginStart"}
+        default: {$ref: "#/components/responses/Problem"}
+  /auth/callback:
+    get:
+      tags: [platform]
+      operationId: authCallback
+      summary: Одноразовая ссылка из бота (32 байта, 5 минут) → cookie сессии
+      parameters:
+        - {name: token, in: query, required: true, schema: {type: string}}
+      responses:
+        "302": {description: Редирект в кабинет, cookie __Host-session выставлена}
+        default: {$ref: "#/components/responses/Problem"}
+  /auth/logout:
+    post:
+      tags: [platform]
+      operationId: authLogout
+      responses:
+        "204": {description: Сессия отозвана}
+        default: {$ref: "#/components/responses/Problem"}
+  /me:
+    get:
+      tags: [platform]
+      operationId: me
+      responses:
+        "200":
+          description: Текущий гражданин
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Me"}
+        default: {$ref: "#/components/responses/Problem"}
+  /stream:
+    get:
+      tags: [platform]
+      operationId: stream
+      summary: SSE — document.*, alert.created, action.updated, summary.ready текущего гражданина
+      description: "Каждое сообщение — `event: <type>`, `data: <конверт события>` (contracts/events/envelope.schema.json)."
+      responses:
+        "200":
+          description: Поток событий
+          content:
+            text/event-stream:
+              schema: {type: string}
+
+  # ---------------- Документы (Разработчик 1) ----------------
+  /documents:
+    get:
+      tags: [documents]
+      operationId: listDocuments
+      summary: Лента документов
+      parameters:
+        - {name: kind, in: query, schema: {$ref: "#/components/schemas/DocumentKind"}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/DocumentStatus"}}
+        - {name: q, in: query, schema: {type: string}, description: поиск по названию и маске номера}
+        - {$ref: "#/components/parameters/Cursor"}
+      responses:
+        "200":
+          description: Страница ленты
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, next_cursor]
+                properties:
+                  items: {type: array, items: {$ref: "#/components/schemas/DocumentListItem"}}
+                  next_cursor: {type: [string, "null"]}
+        default: {$ref: "#/components/responses/Problem"}
+  /documents/{document_id}:
+    get:
+      tags: [documents]
+      operationId: getDocument
+      parameters: [{$ref: "#/components/parameters/DocumentId"}]
+      responses:
+        "200":
+          description: Карточка документа
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DocumentDetail"}
+        default: {$ref: "#/components/responses/Problem"}
+  /documents/{document_id}/versions:
+    get:
+      tags: [documents]
+      operationId: listDocumentVersions
+      parameters: [{$ref: "#/components/parameters/DocumentId"}]
+      responses:
+        "200":
+          description: История версий, новые сверху
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/DocumentVersion"}}
+        default: {$ref: "#/components/responses/Problem"}
+  /documents/{document_id}/versions/{version_no}/diff:
+    get:
+      tags: [documents]
+      operationId: getVersionDiff
+      summary: Что изменилось относительно предыдущей версии
+      parameters:
+        - {$ref: "#/components/parameters/DocumentId"}
+        - {name: version_no, in: path, required: true, schema: {type: integer, minimum: 1}}
+      responses:
+        "200":
+          description: Изменённые поля
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/DiffEntry"}}
+        default: {$ref: "#/components/responses/Problem"}
+  /sources:
+    get:
+      tags: [documents]
+      operationId: listSources
+      summary: Статус источников — доказательство, что данные живые
+      responses:
+        "200":
+          description: Источники гражданина
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/Source"}}
+        default: {$ref: "#/components/responses/Problem"}
+  /internal/ingest/snapshots:
+    post:
+      tags: [internal]
+      operationId: ingestSnapshot
+      summary: Единственный вход данных. HMAC-SHA256 тела в X-Signature, метка времени в X-Timestamp (окно 5 минут)
+      parameters:
+        - {name: X-Signature, in: header, required: true, schema: {type: string}}
+        - {name: X-Timestamp, in: header, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "./schemas/source_snapshot.schema.json"}
+      responses:
+        "202":
+          description: Принято (повтор snapshot_id — тоже 202, без новых версий)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created: {type: integer}
+                  changed: {type: integer}
+                  unchanged: {type: integer}
+        default: {$ref: "#/components/responses/Problem"}
+  /internal/documents/{document_id}/refresh:
+    post:
+      tags: [internal]
+      operationId: refreshDocument
+      parameters:
+        - {$ref: "#/components/parameters/DocumentId"}
+        - {name: X-Signature, in: header, required: true, schema: {type: string}}
+        - {name: X-Timestamp, in: header, required: true, schema: {type: integer}}
+      responses:
+        "202": {description: Внеочередной опрос запланирован}
+        default: {$ref: "#/components/responses/Problem"}
+
+  # ---------------- Сторож (Разработчик 2) ----------------
+  /alerts:
+    get:
+      tags: [guard]
+      operationId: listAlerts
+      parameters: [{$ref: "#/components/parameters/Cursor"}]
+      responses:
+        "200":
+          description: Тревоги, сначала важные и новые
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, next_cursor]
+                properties:
+                  items: {type: array, items: {$ref: "#/components/schemas/Alert"}}
+                  next_cursor: {type: [string, "null"]}
+        default: {$ref: "#/components/responses/Problem"}
+  /alerts/{alert_id}/verdict:
+    post:
+      tags: [guard]
+      operationId: setAlertVerdict
+      parameters: [{name: alert_id, in: path, required: true, schema: {type: string, format: uuid}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [verdict]
+              properties:
+                verdict: {enum: [me, not_me]}
+      responses:
+        "200":
+          description: Тревога с вердиктом
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Alert"}
+        default: {$ref: "#/components/responses/Problem"}
+  /actions:
+    post:
+      tags: [guard]
+      operationId: createAction
+      summary: Шаг 1 — запросить действие; код подтверждения уходит в Telegram
+      parameters:
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 16}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, document_id]
+              properties:
+                type: {$ref: "#/components/schemas/ActionType"}
+                document_id: {type: string, format: uuid}
+                alert_id: {type: [string, "null"], format: uuid}
+      responses:
+        "201":
+          description: Действие ждёт подтверждения (повтор с тем же ключом возвращает то же действие)
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Action"}
+        default: {$ref: "#/components/responses/Problem"}
+  /actions/{action_id}:
+    get:
+      tags: [guard]
+      operationId: getAction
+      parameters: [{$ref: "#/components/parameters/ActionId"}]
+      responses:
+        "200":
+          description: Действие и его ход
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Action"}
+        default: {$ref: "#/components/responses/Problem"}
+  /actions/{action_id}/confirm:
+    post:
+      tags: [guard]
+      operationId: confirmAction
+      summary: Шаг 2 — 6-значный код из Telegram (2 минуты, 3 попытки)
+      parameters: [{$ref: "#/components/parameters/ActionId"}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: {type: string, pattern: "^[0-9]{6}$"}
+      responses:
+        "200":
+          description: Код принят, действие исполняется
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Action"}
+        default: {$ref: "#/components/responses/Problem"}
+  /family:
+    get:
+      tags: [guard]
+      operationId: getFamily
+      responses:
+        "200":
+          description: Кто видит мои данные и чьи вижу я
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [granted_by_me, granted_to_me]
+                properties:
+                  granted_by_me: {type: array, items: {$ref: "#/components/schemas/Consent"}}
+                  granted_to_me: {type: array, items: {$ref: "#/components/schemas/Consent"}}
+        default: {$ref: "#/components/responses/Problem"}
+  /consents:
+    post:
+      tags: [guard]
+      operationId: createConsent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invite_code, scopes]
+              properties:
+                invite_code: {type: string}
+                scopes: {type: array, items: {enum: [read_documents, receive_alerts]}}
+      responses:
+        "201":
+          description: Согласие выдано
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Consent"}
+        default: {$ref: "#/components/responses/Problem"}
+  /consents/{consent_id}:
+    delete:
+      tags: [guard]
+      operationId: revokeConsent
+      parameters: [{name: consent_id, in: path, required: true, schema: {type: string, format: uuid}}]
+      responses:
+        "204": {description: Отозвано сразу}
+        default: {$ref: "#/components/responses/Problem"}
+  /audit:
+    get:
+      tags: [guard]
+      operationId: listAudit
+      parameters: [{$ref: "#/components/parameters/Cursor"}]
+      responses:
+        "200":
+          description: Журнал действий
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, next_cursor]
+                properties:
+                  items: {type: array, items: {$ref: "#/components/schemas/AuditEntry"}}
+                  next_cursor: {type: [string, "null"]}
+        default: {$ref: "#/components/responses/Problem"}
+  /audit/verify:
+    get:
+      tags: [guard]
+      operationId: verifyAudit
+      responses:
+        "200":
+          description: Целостность цепочки хешей
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok: {type: boolean}
+                  broken_at_seq: {type: [integer, "null"]}
+        default: {$ref: "#/components/responses/Problem"}
+
+  # ---------------- Помощник (Разработчик 3) ----------------
+  /assist/documents/{document_id}/summary:
+    get:
+      tags: [assistant]
+      operationId: getSummary
+      parameters:
+        - {$ref: "#/components/parameters/DocumentId"}
+        - {name: lang, in: query, schema: {$ref: "#/components/schemas/Lang"}}
+      responses:
+        "200":
+          description: Резюме текущей версии
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Summary"}
+        "202": {description: Ещё считается — придёт summary.ready в /stream}
+        default: {$ref: "#/components/responses/Problem"}
+  /assist/chat:
+    post:
+      tags: [assistant]
+      operationId: chat
+      summary: Вопрос по документу; ответ потоком SSE, в конце — ссылки на статьи
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_id, message]
+              properties:
+                document_id: {type: string, format: uuid}
+                message: {type: string, maxLength: 2000}
+                lang: {$ref: "#/components/schemas/Lang"}
+      responses:
+        "200":
+          description: "event: delta (кусок текста), event: done ({citations: Citation[]})"
+          content:
+            text/event-stream:
+              schema: {type: string}
+        default: {$ref: "#/components/responses/Problem"}
+  /assist/search:
+    get:
+      tags: [assistant]
+      operationId: searchLaw
+      summary: Гибридный поиск по корпусу lex.uz (отладка RAG)
+      parameters:
+        - {name: q, in: query, required: true, schema: {type: string}}
+        - {name: k, in: query, schema: {type: integer, default: 8}}
+        - {name: rerank, in: query, schema: {type: boolean}}
+      responses:
+        "200":
+          description: Найденные статьи
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/LawHit"}}
+  /assist/ask:
+    post:
+      tags: [assistant]
+      operationId: askLaw
+      summary: Вопрос агенту без документа (отладка RAG)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question: {type: string}
+      responses:
+        "200":
+          description: Ответ со ссылками
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [answer, citations]
+                properties:
+                  answer: {type: string}
+                  citations: {type: array, items: {type: object}}
+                  unverified: {type: array, items: {type: string}}
+                  tool_calls: {type: integer}
+
+components:
+  parameters:
+    Cursor: {name: cursor, in: query, schema: {type: string}, description: непрозрачный курсор из next_cursor}
+    DocumentId: {name: document_id, in: path, required: true, schema: {type: string, format: uuid}}
+    ActionId: {name: action_id, in: path, required: true, schema: {type: string, format: uuid}}
+
+  responses:
+    Problem:
+      description: Ошибка (RFC 9457)
+      content:
+        application/problem+json:
+          schema: {$ref: "#/components/schemas/Problem"}
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: {type: string}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
+
+    Lang: {enum: [uz, ru]}
+    DocumentKind: {enum: [notarial_act, poa_notarial, poa_car, ban, real_estate_right, vehicle, loan, enforcement_case, labor_contract]}
+    DocumentStatus: {enum: [active, completed, revoked, expired, unknown]}
+    ActionType: {enum: [revoke_car_poa]}
+    ActionStatus: {enum: [proposed, awaiting_confirmation, confirmed, executing, verifying, done, failed, expired]}
+    Severity: {enum: [critical, high, info]}
+
+    NormalizedDocument: {$ref: "./schemas/normalized_document.schema.json"}
+
+    Me:
+      type: object
+      required: [id, display_name, lang]
+      properties:
+        id: {type: string, format: uuid}
+        display_name: {type: string, example: "Азиз А."}
+        lang: {$ref: "#/components/schemas/Lang"}
+
+    LoginStart:
+      type: object
+      required: [telegram_url, expires_at]
+      properties:
+        telegram_url: {type: string, example: "https://t.me/storozh_bot?start=login_abc"}
+        expires_at: {type: string, format: date-time}
+
+    DocumentListItem:
+      type: object
+      required: [id, uri, kind, title, status, owner_role, source, last_seen_at, is_new]
+      properties:
+        id: {type: string, format: uuid}
+        uri: {type: string, example: "uz:notarius:poa:2026-0001234"}
+        kind: {$ref: "#/components/schemas/DocumentKind"}
+        title: {type: string, example: "Доверенность на автомобиль"}
+        number_masked: {type: [string, "null"], example: "2026-***234"}
+        counterparty_masked: {type: [string, "null"], example: "Б***р К."}
+        status: {$ref: "#/components/schemas/DocumentStatus"}
+        owner_role: {type: string, example: principal}
+        source: {type: string, example: mygov.car_poa}
+        issued_at: {type: [string, "null"], format: date}
+        last_seen_at: {type: string, format: date-time}
+        is_new: {type: boolean}
+
+    DocumentDetail:
+      type: object
+      required: [id, current_version, document, first_seen_at, last_seen_at]
+      properties:
+        id: {type: string, format: uuid}
+        current_version: {type: integer}
+        document: {$ref: "#/components/schemas/NormalizedDocument"}
+        first_seen_at: {type: string, format: date-time}
+        last_seen_at: {type: string, format: date-time}
+
+    DocumentVersion:
+      type: object
+      required: [version_no, content_hash, fetched_at, changed_fields]
+      properties:
+        version_no: {type: integer}
+        content_hash: {type: string}
+        fetched_at: {type: string, format: date-time}
+        changed_fields: {type: array, items: {type: string}}
+
+    DiffEntry:
+      type: object
+      required: [field]
+      properties:
+        field: {type: string, example: status}
+        from: {example: active}
+        to: {example: revoked}
+
+    Source:
+      type: object
+      required: [source_id, title, enabled, status]
+      properties:
+        source_id: {type: string, example: mygov.car_poa}
+        title: {type: string, example: "my.gov.uz · e-доверенности на авто"}
+        enabled: {type: boolean}
+        status: {enum: [ok, error, session_expired, disabled]}
+        last_poll_at: {type: [string, "null"], format: date-time}
+        last_ok_at: {type: [string, "null"], format: date-time}
+        last_error: {type: [string, "null"]}
+        poll_interval_s: {type: integer, example: 20}
+
+    Alert:
+      type: object
+      required: [id, rule_id, severity, title, status, created_at, actions]
+      properties:
+        id: {type: string, format: uuid}
+        document_id: {type: [string, "null"], format: uuid}
+        rule_id: {type: string, example: G1}
+        severity: {$ref: "#/components/schemas/Severity"}
+        title: {type: string, example: "От вашего имени выдана доверенность"}
+        explanation: {type: [string, "null"]}
+        verdict: {enum: [me, not_me, null]}
+        status: {enum: [open, resolved]}
+        actions: {type: array, items: {type: string, example: not_me_revoke}}
+        created_at: {type: string, format: date-time}
+
+    Action:
+      type: object
+      required: [id, type, document_id, status, steps]
+      properties:
+        id: {type: string, format: uuid}
+        type: {$ref: "#/components/schemas/ActionType"}
+        document_id: {type: string, format: uuid}
+        alert_id: {type: [string, "null"], format: uuid}
+        status: {$ref: "#/components/schemas/ActionStatus"}
+        confirm_expires_at: {type: [string, "null"], format: date-time}
+        attempts_left: {type: integer}
+        steps:
+          type: array
+          items:
+            type: object
+            required: [status, at]
+            properties:
+              status: {$ref: "#/components/schemas/ActionStatus"}
+              at: {type: string, format: date-time}
+        verified_status: {type: [string, "null"], description: "статус в источнике после проверки, напр. revoked"}
+        evidence_url: {type: [string, "null"]}
+        error: {type: [string, "null"]}
+
+    Consent:
+      type: object
+      required: [id, grantor, grantee, scopes, granted_at]
+      properties:
+        id: {type: string, format: uuid}
+        grantor: {type: object, properties: {id: {type: string, format: uuid}, display_name: {type: string}}}
+        grantee: {type: object, properties: {id: {type: string, format: uuid}, display_name: {type: string}}}
+        scopes: {type: array, items: {enum: [read_documents, receive_alerts]}}
+        granted_at: {type: string, format: date-time}
+        revoked_at: {type: [string, "null"], format: date-time}
+
+    AuditEntry:
+      type: object
+      required: [seq, actor, action, target, at, hash]
+      properties:
+        seq: {type: integer}
+        actor: {type: string}
+        action: {type: string}
+        target: {type: string}
+        at: {type: string, format: date-time}
+        hash: {type: string}
+
+    Citation:
+      type: object
+      required: [act, article, url]
+      properties:
+        act: {type: string, example: "Закон «О нотариате»"}
+        article: {type: string, example: "31"}
+        url: {type: string, example: "https://lex.uz/docs/..."}
+
+    Summary:
+      type: object
+      required: [document_id, version_no, lang, what, other_party_can, risks, todo, citations]
+      properties:
+        document_id: {type: string, format: uuid}
+        version_no: {type: integer}
+        lang: {$ref: "#/components/schemas/Lang"}
+        what: {type: string}
+        other_party_can: {type: string}
+        risks: {type: string}
+        todo: {type: string}
+        citations: {type: array, items: {$ref: "#/components/schemas/Citation"}}
+
+    LawHit:
+      type: object
+      properties:
+        code: {type: string}
+        number: {type: string}
+        title: {type: string}
+        lang: {type: string}
+        url: {type: string}
+        score: {type: number}
+        text: {type: string}

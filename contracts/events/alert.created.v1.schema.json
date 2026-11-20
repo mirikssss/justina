@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "alert.created.v1.schema.json",
+  "title": "alert.created",
+  "description": "Сработало правило, создана тревога",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "alert.created"
+    },
+    "schema": {
+      "const": "alert.created/v1"
+    },
+    "producer": {
+      "const": "guard"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "alert_id",
+        "rule_id",
+        "severity",
+        "document_id"
+      ],
+      "properties": {
+        "alert_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "rule_id": {
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "critical",
+            "high",
+            "info"
+          ]
+        },
+        "document_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        }
+      }
+    }
+  }
+}

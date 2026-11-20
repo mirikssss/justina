@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "summary.ready.v1.schema.json",
+  "title": "summary.ready",
+  "description": "Резюме версии документа готово",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "summary.ready"
+    },
+    "schema": {
+      "const": "summary.ready/v1"
+    },
+    "producer": {
+      "const": "assistant"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_id",
+        "version_no",
+        "lang"
+      ],
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "version_no": {
+          "type": "integer"
+        },
+        "lang": {
+          "enum": [
+            "uz",
+            "ru"
+          ]
+        }
+      }
+    }
+  }
+}
