@@ -17,7 +17,7 @@ CREATE TABLE source_sessions (
     provider    text        NOT NULL DEFAULT 'oneid',
     state_enc   bytea       NOT NULL,            -- Playwright storage state, зашифрован
     expires_at  timestamptz,
-    status      text        NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'revoked')),
+    status      text        NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired')),
     created_at  timestamptz NOT NULL DEFAULT now(),
     UNIQUE (citizen_id, provider)
 );
@@ -32,13 +32,14 @@ CREATE TABLE documents (
     owner_role       text        NOT NULL,
     title            text        NOT NULL,
     current_version  int         NOT NULL DEFAULT 1,
+    updated_at       timestamptz NOT NULL DEFAULT now(),  -- время последней новой версии: сортировка ленты
     first_seen_at    timestamptz NOT NULL DEFAULT now(),
     last_seen_at     timestamptz NOT NULL DEFAULT now(),
     missing_count    int         NOT NULL DEFAULT 0,
     created_at       timestamptz NOT NULL DEFAULT now(),
     UNIQUE (citizen_id, uri)
 );
-CREATE INDEX documents_feed ON documents (citizen_id, last_seen_at DESC);
+CREATE INDEX documents_feed ON documents (citizen_id, updated_at DESC);
 
 -- Версии только дописываются.
 CREATE TABLE document_versions (
@@ -60,7 +61,8 @@ CREATE TABLE snapshots (
     snapshot_id  uuid        PRIMARY KEY,
     citizen_id   uuid        NOT NULL,
     source       text        NOT NULL,
-    complete     boolean     NOT NULL,
-    fetched_at   timestamptz NOT NULL,
+    complete         boolean     NOT NULL,
+    documents_count  int         NOT NULL,
+    fetched_at       timestamptz NOT NULL,
     received_at  timestamptz NOT NULL DEFAULT now()
 );

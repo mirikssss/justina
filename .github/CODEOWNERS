@@ -1,16 +1,19 @@
-# Владельцы папок: замените dev1/dev2/dev3 на GitHub-логины и раскомментируйте строки.
-# Вместе с защитой main («Require review from Code Owners») это даёт «чужое — только через ревью владельца».
+# Владельцы папок по ТЗ 1.1: замените dev1/dev2/dev3 на GitHub-логины и раскомментируйте строки.
+# Вместе с защитой main («Require review from Code Owners») чужую папку меняют только через ревью владельца.
 #
-# /contracts/                         @dev1 @dev2 @dev3
-# /backend/storozh/shared/            @dev3
-# /backend/storozh/platform/          @dev3
-# /backend/storozh/assistant/         @dev3
-# /backend/storozh/documents/         @dev1
-# /backend/storozh/guard/             @dev2
+# /contracts/                             @dev1 @dev2 @dev3
+# /backend/storozh/documents/             @dev1
 # /backend/storozh/migrations/documents/  @dev1
-# /backend/storozh/migrations/guard/      @dev2
-# /backend/storozh/migrations/assistant/  @dev3
-# /web/components/mygov/              @dev3
-# /web/features/documents/            @dev1
-# /web/features/guard/                @dev2
-# /web/features/assistant/            @dev3
+# /web/features/documents/                @dev1
+# /backend/storozh/shared/                @dev2
+# /backend/storozh/platform/              @dev2
+# /backend/storozh/assistant/             @dev2
+# /backend/storozh/migrations/shared/     @dev2
+# /backend/storozh/migrations/platform/   @dev2
+# /backend/storozh/migrations/assistant/  @dev2
+# /infra/  /.github/workflows/            @dev2
+# /web/features/assistant/  /web/features/platform/  @dev2
+# /backend/storozh/guard/                 @dev3
+# /backend/storozh/migrations/guard/      @dev3
+# /web/components/mygov/  /web/app/(shell)/  @dev3
+# /web/features/guard/                    @dev3

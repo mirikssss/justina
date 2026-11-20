@@ -8,8 +8,8 @@ POA_KINDS = {DocumentKind.poa_car, DocumentKind.poa_notarial}
 
 
 @rule("G1")
-def new_poa_as_principal(event: Event, doc: NormalizedDocument, ctx: RuleContext) -> AlertDraft | None:
-    if event.type != "document.created" or doc.kind not in POA_KINDS or doc.owner_role != OwnerRole.principal:
+def new_poa_as_principal(event: Event, doc: NormalizedDocument | None, ctx: RuleContext) -> AlertDraft | None:
+    if doc is None or event.type != "document.created" or doc.kind not in POA_KINDS or doc.owner_role != OwnerRole.principal:
         return None
     return AlertDraft(
         rule_id="G1",

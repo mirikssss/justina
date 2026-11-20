@@ -4,14 +4,14 @@
  */
 
 export interface paths {
-    "/health": {
+    "/healthz": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["health"];
+        get: operations["healthz"];
         put?: never;
         post?: never;
         delete?: never;
@@ -29,7 +29,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Начать вход — ссылка на бота с login_<nonce> */
+        /** Начать вход — ссылка на бота с login_<nonce> (5 минут) */
         post: operations["authTelegramStart"];
         delete?: never;
         options?: never;
@@ -44,7 +44,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Одноразовая ссылка из бота (32 байта, 5 минут) → cookie сессии */
+        /** Одноразовая ссылка из бота → cookie сессии → редирект на /documents */
         get: operations["authCallback"];
         put?: never;
         post?: never;
@@ -94,10 +94,42 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * SSE — document.*, alert.created, action.updated, summary.ready текущего гражданина
+         * SSE — document.*, alert.created, action.updated, summary.ready текущего гражданина; heartbeat 15 с
          * @description Каждое сообщение — `event: <type>`, `data: <конверт события>` (contracts/events/envelope.schema.json).
          */
         get: operations["stream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audit/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["verifyAudit"];
         put?: never;
         post?: never;
         delete?: never;
@@ -113,7 +145,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Лента документов */
+        /** Лента документов, сортировка по updated_at desc */
         get: operations["listDocuments"];
         put?: never;
         post?: never;
@@ -162,7 +194,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Что изменилось относительно предыдущей версии */
+        /** Что изменилось относительно версии n−1 */
         get: operations["getVersionDiff"];
         put?: never;
         post?: never;
@@ -189,6 +221,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sources/{source_id}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Внеочередной опрос источника; не чаще раза в 20 с (иначе 429) */
+        post: operations["refreshSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/ingest/snapshots": {
         parameters: {
             query?: never;
@@ -198,7 +247,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Единственный вход данных. HMAC-SHA256 тела в X-Signature, метка времени в X-Timestamp (окно 5 минут) */
+        /** Единственный вход данных. HMAC-SHA256 в X-Signature, метка времени в X-Timestamp (окно 5 минут) */
         post: operations["ingestSnapshot"];
         delete?: never;
         options?: never;
@@ -222,7 +271,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/alerts": {
+    "/guard/alerts": {
         parameters: {
             query?: never;
             header?: never;
@@ -238,7 +287,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/alerts/{alert_id}/verdict": {
+    "/guard/alerts/{alert_id}/verdict": {
         parameters: {
             query?: never;
             header?: never;
@@ -254,7 +303,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/actions": {
+    "/guard/documents/{document_id}/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Тревоги по документу — для <DocumentGuard/> */
+        get: operations["listDocumentAlerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guard/actions": {
         parameters: {
             query?: never;
             header?: never;
@@ -263,7 +329,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Шаг 1 — запросить действие; код подтверждения уходит в Telegram */
+        /** Шаг 1 — запросить действие; 6-значный код уходит в привязанный Telegram */
         post: operations["createAction"];
         delete?: never;
         options?: never;
@@ -271,7 +337,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/actions/{action_id}": {
+    "/guard/actions/{action_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -287,7 +353,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/actions/{action_id}/confirm": {
+    "/guard/actions/{action_id}/confirm": {
         parameters: {
             query?: never;
             header?: never;
@@ -296,7 +362,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Шаг 2 — 6-значный код из Telegram (2 минуты, 3 попытки) */
+        /** Шаг 2 — код из Telegram (2 минуты, 3 попытки; потом 429) */
         post: operations["confirmAction"];
         delete?: never;
         options?: never;
@@ -304,7 +370,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/family": {
+    "/guard/actions/{action_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Скриншот результата действия */
+        get: operations["getActionEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guard/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Черновик заявления (ст. 31 или иск) через assistant.draft_application */
+        post: operations["createDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guard/telegram/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Привязать Telegram — ссылка t.me/<bot>?start=link_<token> (10 минут) */
+        post: operations["telegramLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guard/family": {
         parameters: {
             query?: never;
             header?: never;
@@ -320,7 +437,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/consents": {
+    "/guard/consents/invite": {
         parameters: {
             query?: never;
             header?: never;
@@ -329,14 +446,30 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["createConsent"];
+        post: operations["createInvite"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/consents/{consent_id}": {
+    "/guard/consents/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acceptInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guard/consents/{consent_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -347,38 +480,6 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["revokeConsent"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/audit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listAudit"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/audit/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["verifyAudit"];
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -409,8 +510,24 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Вопрос по документу; ответ потоком SSE, в конце — ссылки на статьи */
+        /** Вопрос по документу; ответ потоком SSE */
         post: operations["chat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assist/chat/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["chatHistory"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -472,7 +589,13 @@ export interface components {
         /** @enum {unknown} */
         ActionStatus: "proposed" | "awaiting_confirmation" | "confirmed" | "executing" | "verifying" | "done" | "failed" | "expired";
         /** @enum {unknown} */
+        AlertStatus: "new" | "seen" | "closed";
+        /** @enum {unknown} */
         Severity: "critical" | "high" | "info";
+        /** @enum {unknown} */
+        DraftType: "art31_postpone" | "court_claim";
+        /** @enum {unknown} */
+        ConsentScope: "read_documents" | "receive_alerts";
         NormalizedDocument: components["schemas"]["normalized_document.schema"];
         Me: {
             /** Format: uuid */
@@ -480,12 +603,6 @@ export interface components {
             /** @example Азиз А. */
             display_name: string;
             lang: components["schemas"]["Lang"];
-        };
-        LoginStart: {
-            /** @example https://t.me/storozh_bot?start=login_abc */
-            telegram_url: string;
-            /** Format: date-time */
-            expires_at: string;
         };
         DocumentListItem: {
             /** Format: uuid */
@@ -495,26 +612,29 @@ export interface components {
             kind: components["schemas"]["DocumentKind"];
             /** @example Доверенность на автомобиль */
             title: string;
-            /** @example 2026-***234 */
-            number_masked?: string | null;
-            /** @example Б***р К. */
-            counterparty_masked?: string | null;
             status: components["schemas"]["DocumentStatus"];
             /** @example principal */
             owner_role: string;
             /** @example mygov.car_poa */
             source: string;
+            /** @example 2026-***234 */
+            number_masked?: string | null;
+            /** @example Б***р К. */
+            counterparty_masked?: string | null;
+            /** @example Chevrolet Cobalt · 01 *** 45 */
+            object_label?: string | null;
             /** Format: date */
             issued_at?: string | null;
-            /** Format: date-time */
-            last_seen_at: string;
             is_new: boolean;
+            /** Format: date-time */
+            updated_at: string;
         };
-        DocumentDetail: {
+        /** @description NormalizedDocument + метаданные хранения */
+        DocumentDetail: components["schemas"]["normalized_document.schema"] & {
             /** Format: uuid */
             id: string;
             current_version: number;
-            document: components["schemas"]["normalized_document.schema"];
+            versions_count: number;
             /** Format: date-time */
             first_seen_at: string;
             /** Format: date-time */
@@ -540,9 +660,8 @@ export interface components {
             source_id: string;
             /** @example my.gov.uz · e-доверенности на авто */
             title: string;
-            enabled: boolean;
             /** @enum {unknown} */
-            status: "ok" | "error" | "session_expired" | "disabled";
+            status: "ok" | "error" | "expired" | "disabled";
             /** Format: date-time */
             last_poll_at?: string | null;
             /** Format: date-time */
@@ -564,9 +683,8 @@ export interface components {
             explanation?: string | null;
             /** @enum {unknown} */
             verdict?: "me" | "not_me" | null;
-            /** @enum {unknown} */
-            status: "open" | "resolved";
-            actions: string[];
+            status: components["schemas"]["AlertStatus"];
+            buttons: string[];
             /** Format: date-time */
             created_at: string;
         };
@@ -576,40 +694,41 @@ export interface components {
             type: components["schemas"]["ActionType"];
             /** Format: uuid */
             document_id: string;
-            /** Format: uuid */
-            alert_id?: string | null;
             status: components["schemas"]["ActionStatus"];
-            /** Format: date-time */
-            confirm_expires_at?: string | null;
-            attempts_left?: number;
             steps: {
                 status: components["schemas"]["ActionStatus"];
                 /** Format: date-time */
                 at: string;
             }[];
-            /** @description статус в источнике после проверки, напр. revoked */
-            verified_status?: string | null;
-            evidence_url?: string | null;
-            error?: string | null;
+            attempts_left?: number;
+            /** Format: date-time */
+            confirm_expires_at?: string | null;
+            result?: {
+                /** @example revoked */
+                verified_status?: string;
+                error?: string | null;
+            } | null;
+        };
+        DraftRef: {
+            /** Format: uuid */
+            draft_id: string;
+            url: string;
         };
         Consent: {
             /** Format: uuid */
             id: string;
-            grantor: {
-                /** Format: uuid */
-                id?: string;
-                display_name?: string;
-            };
-            grantee: {
-                /** Format: uuid */
-                id?: string;
-                display_name?: string;
-            };
-            scopes: ("read_documents" | "receive_alerts")[];
+            grantor: components["schemas"]["Person"];
+            grantee: components["schemas"]["Person"];
+            scopes: components["schemas"]["ConsentScope"][];
             /** Format: date-time */
             granted_at: string;
             /** Format: date-time */
             revoked_at?: string | null;
+        };
+        Person: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
         };
         AuditEntry: {
             seq: number;
@@ -622,10 +741,10 @@ export interface components {
         };
         Citation: {
             /** @example Закон «О нотариате» */
-            act: string;
+            act_title: string;
             /** @example 31 */
             article: string;
-            /** @example https://lex.uz/docs/... */
+            /** @example https://www.lex.uz/acts/57043 */
             url: string;
         };
         Summary: {
@@ -633,11 +752,22 @@ export interface components {
             document_id: string;
             version_no: number;
             lang: components["schemas"]["Lang"];
-            what: string;
-            other_party_can: string;
-            risks: string;
-            todo: string;
+            /** @example Доверенность на управление и продажу вашего автомобиля */
+            what_is_it: string;
+            counterparty_can: string[];
+            risks: string[];
+            what_to_do: string[];
             citations: components["schemas"]["Citation"][];
+        };
+        ChatMessage: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {unknown} */
+            role: "user" | "assistant";
+            text: string;
+            citations: components["schemas"]["Citation"][];
+            /** Format: date-time */
+            created_at: string;
         };
         LawHit: {
             code?: string;
@@ -719,6 +849,8 @@ export interface components {
         Cursor: string;
         DocumentId: string;
         ActionId: string;
+        XSignature: string;
+        XTimestamp: number;
     };
     requestBodies: never;
     headers: never;
@@ -726,7 +858,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health: {
+    healthz: {
         parameters: {
             query?: never;
             header?: never;
@@ -764,7 +896,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LoginStart"];
+                    "application/json": {
+                        /** @example https://t.me/storozh_bot?start=login_abc */
+                        deep_link: string;
+                    };
                 };
             };
             default: components["responses"]["Problem"];
@@ -849,6 +984,57 @@ export interface operations {
                     "text/event-stream": string;
                 };
             };
+        };
+    };
+    listAudit: {
+        parameters: {
+            query?: {
+                /** @description непрозрачный курсор из next_cursor */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Журнал аудита гражданина */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["AuditEntry"][];
+                        next_cursor: string | null;
+                    };
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    verifyAudit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Целостность цепочки хешей */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        broken_seq?: number | null;
+                    };
+                };
+            };
+            default: components["responses"]["Problem"];
         };
     };
     listDocuments: {
@@ -973,12 +1159,33 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    refreshSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Опрос запланирован */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     ingestSnapshot: {
         parameters: {
             query?: never;
             header: {
-                "X-Signature": string;
-                "X-Timestamp": number;
+                "X-Signature": components["parameters"]["XSignature"];
+                "X-Timestamp": components["parameters"]["XTimestamp"];
             };
             path?: never;
             cookie?: never;
@@ -989,16 +1196,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Принято (повтор snapshot_id — тоже 202, без новых версий) */
+            /** @description Принято. Повтор snapshot_id — тоже 202 и new_versions = 0 */
             202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        created?: number;
-                        changed?: number;
-                        unchanged?: number;
+                        new_versions: number;
                     };
                 };
             };
@@ -1009,8 +1214,8 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-Signature": string;
-                "X-Timestamp": number;
+                "X-Signature": components["parameters"]["XSignature"];
+                "X-Timestamp": components["parameters"]["XTimestamp"];
             };
             path: {
                 document_id: components["parameters"]["DocumentId"];
@@ -1032,6 +1237,7 @@ export interface operations {
     listAlerts: {
         parameters: {
             query?: {
+                status?: components["schemas"]["AlertStatus"];
                 /** @description непрозрачный курсор из next_cursor */
                 cursor?: components["parameters"]["Cursor"];
             };
@@ -1086,6 +1292,29 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    listDocumentAlerts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: components["parameters"]["DocumentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Тревоги документа */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Alert"][];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     createAction: {
         parameters: {
             query?: never;
@@ -1098,16 +1327,14 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    type: components["schemas"]["ActionType"];
                     /** Format: uuid */
                     document_id: string;
-                    /** Format: uuid */
-                    alert_id?: string | null;
+                    type: components["schemas"]["ActionType"];
                 };
             };
         };
         responses: {
-            /** @description Действие ждёт подтверждения (повтор с тем же ключом возвращает то же действие) */
+            /** @description Действие ждёт подтверждения. Повтор с тем же ключом возвращает то же действие */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -1171,31 +1398,30 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
-    getFamily: {
+    getActionEvidence: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                action_id: components["parameters"]["ActionId"];
+            };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Кто видит мои данные и чьи вижу я */
+            /** @description PNG */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        granted_by_me: components["schemas"]["Consent"][];
-                        granted_to_me: components["schemas"]["Consent"][];
-                    };
+                    "image/png": string;
                 };
             };
             default: components["responses"]["Problem"];
         };
     };
-    createConsent: {
+    createDraft: {
         parameters: {
             query?: never;
             header?: never;
@@ -1205,14 +1431,118 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    invite_code: string;
-                    scopes: ("read_documents" | "receive_alerts")[];
+                    /** Format: uuid */
+                    document_id: string;
+                    type: components["schemas"]["DraftType"];
+                };
+            };
+        };
+        responses: {
+            /** @description Ссылка на PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftRef"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    telegramLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ссылка на бота */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deep_link: string;
+                    };
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getFamily: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Кому я дал доступ и кто дал доступ мне */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        i_share_with: components["schemas"]["Consent"][];
+                        shared_with_me: components["schemas"]["Consent"][];
+                    };
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    scopes: components["schemas"]["ConsentScope"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Код приглашения для родственника */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                    };
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    acceptInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    code: string;
                 };
             };
         };
         responses: {
             /** @description Согласие выдано */
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1240,57 +1570,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            default: components["responses"]["Problem"];
-        };
-    };
-    listAudit: {
-        parameters: {
-            query?: {
-                /** @description непрозрачный курсор из next_cursor */
-                cursor?: components["parameters"]["Cursor"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Журнал действий */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["AuditEntry"][];
-                        next_cursor: string | null;
-                    };
-                };
-            };
-            default: components["responses"]["Problem"];
-        };
-    };
-    verifyAudit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Целостность цепочки хешей */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        ok: boolean;
-                        broken_at_seq?: number | null;
-                    };
-                };
             };
             default: components["responses"]["Problem"];
         };
@@ -1345,13 +1624,36 @@ export interface operations {
             };
         };
         responses: {
-            /** @description event: delta (кусок текста), event: done ({citations: Citation[]}) */
+            /** @description event: token (кусок текста), event: citations (Citation[]), event: done */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "text/event-stream": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    chatHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: components["parameters"]["DocumentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description История чата по документу */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatMessage"][];
                 };
             };
             default: components["responses"]["Problem"];

@@ -57,19 +57,19 @@ torch = { index = "pytorch-cpu" }
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["tests"]
+testpaths = ["tests", "storozh"]
 
 [tool.ruff]
 line-length = 120
 target-version = "py312"
-extend-exclude = ["eval/results"]
+extend-exclude = ["storozh/assistant/eval/results"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC"]
 ignore = ["B008", "E501", "B905"]  # B008: Depends() — идиома FastAPI; длину строк держит line-length форматтера
 
 [tool.ruff.lint.per-file-ignores]
-"eval/*" = ["B023"]
+"storozh/assistant/eval/*" = ["B023"]
 
 # --- Границы контекстов: проверяет `uv run lint-imports` (и CI) ---
 [tool.importlinter]
@@ -88,16 +88,17 @@ forbidden_modules = [
     "storozh.guard.service",
     "storozh.guard.api",
     "storozh.guard.worker",
-    "storozh.guard.bot",
     "storozh.assistant.rag",
     "storozh.assistant.llm",
     "storozh.assistant.pii",
+    "storozh.assistant.drafts",
+    "storozh.assistant.eval",
     "storozh.assistant.service",
     "storozh.assistant.api",
     "storozh.assistant.worker",
     "storozh.platform.service",
     "storozh.platform.api",
-    "storozh.platform.domain",
+    "storozh.platform.db",
 ]
 
 [[tool.importlinter.contracts]]
@@ -112,15 +113,18 @@ forbidden_modules = [
     "storozh.documents.service",
     "storozh.documents.api",
     "storozh.documents.worker",
+    "storozh.documents.cli",
     "storozh.assistant.rag",
     "storozh.assistant.llm",
     "storozh.assistant.pii",
+    "storozh.assistant.drafts",
+    "storozh.assistant.eval",
     "storozh.assistant.service",
     "storozh.assistant.api",
     "storozh.assistant.worker",
     "storozh.platform.service",
     "storozh.platform.api",
-    "storozh.platform.domain",
+    "storozh.platform.db",
 ]
 
 [[tool.importlinter.contracts]]
@@ -135,16 +139,16 @@ forbidden_modules = [
     "storozh.documents.service",
     "storozh.documents.api",
     "storozh.documents.worker",
+    "storozh.documents.cli",
     "storozh.guard.domain",
     "storozh.guard.adapters",
     "storozh.guard.ports",
     "storozh.guard.service",
     "storozh.guard.api",
     "storozh.guard.worker",
-    "storozh.guard.bot",
     "storozh.platform.service",
     "storozh.platform.api",
-    "storozh.platform.domain",
+    "storozh.platform.db",
 ]
 
 [[tool.importlinter.contracts]]
@@ -159,16 +163,18 @@ forbidden_modules = [
     "storozh.documents.service",
     "storozh.documents.api",
     "storozh.documents.worker",
+    "storozh.documents.cli",
     "storozh.guard.domain",
     "storozh.guard.adapters",
     "storozh.guard.ports",
     "storozh.guard.service",
     "storozh.guard.api",
     "storozh.guard.worker",
-    "storozh.guard.bot",
     "storozh.assistant.rag",
     "storozh.assistant.llm",
     "storozh.assistant.pii",
+    "storozh.assistant.drafts",
+    "storozh.assistant.eval",
     "storozh.assistant.service",
     "storozh.assistant.api",
     "storozh.assistant.worker",

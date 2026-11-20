@@ -1,4 +1,4 @@
-"""Мини-eval поиска: recall@k и MRR по golden.jsonl. Запуск: uv run python -m eval.run [--rerank]"""
+"""Мини-eval поиска: recall@k и MRR по golden.jsonl. Запуск: uv run python -m storozh.assistant.eval.run [--rerank]"""
 
 import json
 import sys

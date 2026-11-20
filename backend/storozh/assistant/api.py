@@ -18,6 +18,7 @@ class AskIn(BaseModel):
 class ChatIn(BaseModel):
     document_id: UUID
     message: str
+    lang: str = "uz"
 
 
 @router.get("/documents/{document_id}/summary")
@@ -28,6 +29,11 @@ async def document_summary(document_id: UUID, lang: str = "uz"):
 @router.post("/chat")
 async def chat(body: ChatIn):
     raise NotImplementedError("POST /assist/chat (SSE)")
+
+
+@router.get("/chat/{document_id}")
+async def chat_history(document_id: UUID):
+    raise NotImplementedError("GET /assist/chat/{document_id}")
 
 
 @router.get("/search")

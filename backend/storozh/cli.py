@@ -6,10 +6,12 @@ import logging
 import typer
 
 from storozh.assistant.rag.cli import app as rag_app
-from storozh.shared import logs
+from storozh.documents.cli import app as documents_app
+from storozh.shared import logging as logs
 
 app = typer.Typer(no_args_is_help=True)
 app.add_typer(rag_app, name="rag")
+app.add_typer(documents_app, name="documents")
 
 @app.callback()
 def _setup() -> None:
@@ -30,7 +32,7 @@ def worker(name: str = typer.Argument(..., help="collector | guard | bot | assis
     elif name == "guard":
         from storozh.guard.worker import run
     elif name == "bot":
-        from storozh.guard.bot.main import run
+        from storozh.guard.adapters.telegram.bot import run
     elif name == "assistant":
         from storozh.assistant.worker import run
     else:
@@ -44,8 +46,3 @@ def migrate():
 
     applied = m.run()
     print("\n".join(applied) if applied else "nothing to apply")
-
-@app.command()
-def connect(citizen: str = typer.Option(..., help="citizen_id")):
-    """Открыть видимый Chromium на id.egov.uz: человек входит сам, сессия шифруется (Разработчик 1)."""
-    raise NotImplementedError("storozh connect: Разработчик 1")

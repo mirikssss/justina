@@ -1,32 +1,50 @@
-"""Публичный интерфейс «Помощника» для других контекстов."""
+"""Публичный интерфейс «Помощника» для других контекстов (Разработчик 2)."""
 
-from dataclasses import dataclass
+from typing import Literal
+from uuid import UUID
+
+from pydantic import BaseModel
 
 from storozh.shared.contracts import Lang, NormalizedDocument
 
-__all__ = ["Citation", "Summary", "explain_alert", "summarize"]
+__all__ = ["Citation", "DraftRef", "DraftType", "Summary", "draft_application", "explain_alert", "summarize"]
+
+DraftType = Literal["art31_postpone", "court_claim"]
 
 
-@dataclass(frozen=True)
-class Citation:
-    act: str
+class Citation(BaseModel):
+    act_title: str
     article: str
     url: str
 
 
-@dataclass(frozen=True)
-class Summary:
-    what: str  # что это
-    other_party_can: str  # что может другая сторона
-    risks: str  # чем рисковано
-    todo: str  # что делать
+class Summary(BaseModel):
+    """Структурированное резюме, проверенное Pydantic (FR-A-04)."""
+
+    document_id: UUID
+    version_no: int
+    lang: Lang
+    what_is_it: str
+    counterparty_can: list[str]
+    risks: list[str]
+    what_to_do: list[str]
     citations: list[Citation]
 
 
+class DraftRef(BaseModel):
+    draft_id: UUID
+    url: str
+
+
 async def summarize(doc: NormalizedDocument, lang: Lang) -> Summary:
-    raise NotImplementedError("assistant.summarize: Разработчик 3")
+    raise NotImplementedError("assistant.summarize: Разработчик 2")
 
 
-async def explain_alert(rule_id: str, doc: NormalizedDocument, lang: Lang) -> str:
-    """До 300 знаков, ответ до 5 с. Вызывающий сам ставит таймаут и шаблон на случай отказа."""
-    raise NotImplementedError("assistant.explain_alert: Разработчик 3")
+async def explain_alert(rule_id: str, doc: NormalizedDocument, lang: Lang) -> str | None:
+    """1–2 предложения до 300 знаков за ≤ 5 с. None при ошибке или таймауте — «Сторож» отправит шаблон."""
+    raise NotImplementedError("assistant.explain_alert: Разработчик 2")
+
+
+async def draft_application(type: DraftType, document_id: UUID, citizen_id: UUID) -> DraftRef:
+    """PDF заявления: реквизиты из документа, текст из шаблона юриста. ФИО и ПИНФЛ — только в PDF, не в модель."""
+    raise NotImplementedError("assistant.draft_application: Разработчик 2")

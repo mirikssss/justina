@@ -6,7 +6,7 @@
 
 | Папка | Владелец | Маршруты |
 |---|---|---|
-| `platform/` | Разработчик 3 | `/login` |
+| `platform/` | Разработчик 2 | `/login` |
 | `documents/` | Разработчик 1 | `/documents`, `/documents/[id]`, `/sources` |
-| `guard/` | Разработчик 2 | `/alerts`, `/family`, `/actions/[id]`, слот `<DocumentGuard/>` |
-| `assistant/` | Разработчик 3 | слот `<DocumentAssistant/>` |
+| `guard/` | Разработчик 3 | `/alerts`, `/family`, `/actions/[id]`, слот `<DocumentGuard/>` |
+| `assistant/` | Разработчик 2 | слот `<DocumentAssistant/>` |

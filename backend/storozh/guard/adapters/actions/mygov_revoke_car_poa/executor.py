@@ -12,4 +12,4 @@ class RevokeCarPoaExecutor:
     action_type = "revoke_car_poa"
 
     async def execute(self, req: ActionRequest, session: BrowserSession) -> ActionResult:
-        raise NotImplementedError("revoke_car_poa: Разработчик 2")
+        raise NotImplementedError("revoke_car_poa: Разработчик 3")

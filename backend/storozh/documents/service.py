@@ -1,5 +1,7 @@
 """Сценарии «Документов»: приём снимков, версии, лента. Внутреннее — не импортировать снаружи."""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from uuid import UUID
 
 from storozh.documents.ports import BrowserSession
@@ -21,8 +23,10 @@ async def request_refresh(document_id: UUID) -> None:
 
 
 class _SessionProvider:
-    async def get(self, citizen_id: UUID, source: str) -> BrowserSession:
+    @asynccontextmanager
+    async def get(self, citizen_id: UUID, provider: str = "oneid") -> AsyncIterator[BrowserSession]:
         raise NotImplementedError("documents.SessionProvider: Разработчик 1")
+        yield  # type: ignore[unreachable]
 
 
 def session_provider() -> _SessionProvider:

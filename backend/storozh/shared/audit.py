@@ -1,14 +1,17 @@
-"""Хелпер аудита. Таблица guard.audit_log принадлежит «Сторожу» (Разработчик 2); здесь — общая
-функция записи, чтобы входы (platform) и просмотры данных родственника тоже попадали в журнал.
+"""Журнал аудита (Разработчик 2): shared.audit_log с цепочкой хешей.
 
-Цепочка хешей: hash = sha256(prev_hash || canonical_json(запись)).
+hash = sha256(prev_hash || canonical_json({actor, action, target, at})). Правка любой строки ломает цепочку,
+GET /audit/verify находит номер испорченной записи. Пишут все контексты: входы, действия, просмотры данных
+родственника.
 """
-
-from typing import Any
 
 from psycopg import AsyncConnection
 
 
-async def record(conn: AsyncConnection, *, actor: str, action: str, target: str,
-                 details: dict[str, Any] | None = None) -> None:
-    raise NotImplementedError("shared/audit: Разработчик 2/3")
+async def write(db: AsyncConnection, *, actor: str, action: str, target: str) -> None:
+    raise NotImplementedError("shared.audit.write: Разработчик 2")
+
+
+async def verify(db: AsyncConnection) -> int | None:
+    """None — цепочка цела, иначе seq первой испорченной записи."""
+    raise NotImplementedError("shared.audit.verify: Разработчик 2")

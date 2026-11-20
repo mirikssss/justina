@@ -1,6 +1,6 @@
 import { Card } from "@/components/mygov";
 
-// Разработчик 3: блок резюме (GET /assist/documents/{id}/summary) и боковой чат (POST /assist/chat, SSE).
+// Разработчик 2: блок резюме (GET /assist/documents/{id}/summary) и боковой чат (POST /assist/chat, SSE).
 // Ссылки на статьи открывают lex.uz.
 export function DocumentAssistant({ documentId }: { documentId: string }) {
   return (

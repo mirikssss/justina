@@ -1,14 +1,15 @@
 -- Общая шина событий. Только дописывается: UPDATE и DELETE запрещены всем ролям контекстов.
 CREATE TABLE shared.outbox (
     seq         bigserial   PRIMARY KEY,
-    event_id    uuid        NOT NULL UNIQUE,
-    topic       text        NOT NULL,
+    id          uuid        NOT NULL UNIQUE,     -- event.id: потребители идемпотентны по нему
+    type        text        NOT NULL,
+    subject     text        NOT NULL,            -- URI документа, id тревоги или действия
     citizen_id  uuid        NOT NULL,
     payload     jsonb       NOT NULL,
     dedupe_key  text        NOT NULL UNIQUE,
     created_at  timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX outbox_topic_seq ON shared.outbox (topic, seq);
+CREATE INDEX outbox_type_seq ON shared.outbox (type, seq);
 
 -- Курсор каждого потребителя.
 CREATE TABLE shared.consumer_offsets (

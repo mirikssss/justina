@@ -22,7 +22,7 @@ export function DocumentFeed() {
       <PageHeader title="Hujjatlarim" subtitle="Все документы на ваше имя из госреестров" />
       <Card>
         {isLoading ? <p className="text-sm text-muted">Загрузка…</p> : null}
-        {error ? <EmptyState title="API ещё не готов" hint="Запустите Prism-мок: docker compose --profile mock up mock" /> : null}
+        {error ? <EmptyState title="API ещё не готов" hint="Запустите Prism-мок: make mock" /> : null}
         <ul className="divide-y divide-border">
           {data?.items.map((d) => (
             <li key={d.id} className="flex items-center justify-between py-3">

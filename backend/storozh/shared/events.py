@@ -11,6 +11,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 Producer = Literal["documents", "guard", "assistant", "platform"]
 
+_PRODUCER_BY_PREFIX: dict[str, Producer] = {
+    "document": "documents", "source": "documents", "alert": "guard", "action": "guard", "summary": "assistant",
+}
+
 # topic -> версия схемы. Добавили событие — добавьте сюда и в contracts/events/.
 TOPICS: dict[str, str] = {
     "document.created": "v1",
@@ -38,10 +42,11 @@ class Event(BaseModel):
     data: dict[str, Any]
 
     @classmethod
-    def new(cls, type: str, *, producer: Producer, subject: str, citizen_id: UUID,
-            dedupe_key: str, data: dict[str, Any]) -> "Event":
+    def new(cls, type: str, *, subject: str, citizen_id: UUID, dedupe_key: str, data: dict[str, Any],
+            producer: Producer | None = None) -> "Event":
         if type not in TOPICS:
             raise ValueError(f"unknown event type {type!r}: add it to shared/events.py and contracts/events/")
+        producer = producer or _PRODUCER_BY_PREFIX[type.split(".")[0]]
         return cls(type=type, schema=f"{type}/{TOPICS[type]}", producer=producer, subject=subject,
                    citizen_id=citizen_id, dedupe_key=dedupe_key, data=data)
 

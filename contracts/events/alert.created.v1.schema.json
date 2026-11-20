@@ -25,7 +25,8 @@
         "alert_id",
         "rule_id",
         "severity",
-        "document_id"
+        "document_id",
+        "rule_version"
       ],
       "properties": {
         "alert_id": {
@@ -48,6 +49,9 @@
             "null"
           ],
           "format": "uuid"
+        },
+        "rule_version": {
+          "type": "integer"
         }
       }
     }

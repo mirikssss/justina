@@ -1,21 +1,28 @@
-"""Шина событий на таблице shared.outbox (вместо брокера; контракт как у Kafka).
+"""Шина событий на таблице shared.outbox вместо брокера (Разработчик 2). Контракт тот же, что у Kafka.
 
-Публикация — в той же транзакции, что и изменение данных:
+Публикация идёт в той же транзакции, что и изменение данных:
 
     async with db.connect("documents") as conn:
         await conn.execute("INSERT INTO document_versions ...")
-        await outbox.publish(conn, Event.new("document.created", ...))
+        await outbox.publish(conn, type="document.created", subject=uri, citizen_id=cid,
+                             data={...}, dedupe_key=f"{uri}:1:created")
 
-Потребление — у каждого контекста свой курсор в shared.consumer_offsets, обработчик и сдвиг курсора
-идут одной транзакцией, поэтому побочные эффекты в базе выполняются ровно один раз.
-Обработчик должен быть идемпотентным для внешних эффектов (Telegram и т. п.).
+Потребление: у каждого потребителя свой курсор в shared.consumer_offsets. Обработчик и сдвиг курсора идут
+одной транзакцией, а строка курсора берётся FOR UPDATE SKIP LOCKED, так что два экземпляра воркера
+не обработают одно событие дважды. Доставка «хотя бы раз»: внешние эффекты (Telegram и т. п.)
+обработчик делает идемпотентными по event.id.
 
     await outbox.consume("guard", {"document.created", "document.changed"}, handle)
+
+Обработчик получает событие и соединение своей транзакции: всё, что он пишет в базу через это соединение,
+коммитится вместе со сдвигом курсора.
 """
 
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable, Iterable
+from typing import Any, NoReturn
+from uuid import UUID
 
 from psycopg import AsyncConnection
 from psycopg.types.json import Jsonb
@@ -31,66 +38,72 @@ _WRITE_LOCK = 0x5702_0001  # сериализует запись: порядок
 Handler = Callable[[Event, AsyncConnection], Awaitable[None]]
 
 
-async def publish(conn: AsyncConnection, event: Event) -> bool:
-    """Записать событие в outbox в текущей транзакции. False — такой dedupe_key уже был."""
+async def publish(conn: AsyncConnection, *, type: str, subject: str, citizen_id: UUID, data: dict[str, Any],
+                  dedupe_key: str) -> UUID:
+    """Записать событие в outbox в текущей транзакции. Повтор dedupe_key возвращает id прежнего события."""
+    return await publish_event(conn, Event.new(type, subject=subject, citizen_id=citizen_id, data=data,
+                                               dedupe_key=dedupe_key))
+
+
+async def publish_event(conn: AsyncConnection, event: Event) -> UUID:
     await conn.execute("SELECT pg_advisory_xact_lock(%s)", (_WRITE_LOCK,))
     cur = await conn.execute(
-        """INSERT INTO shared.outbox (event_id, topic, citizen_id, payload, dedupe_key)
-           VALUES (%s, %s, %s, %s, %s) ON CONFLICT (dedupe_key) DO NOTHING RETURNING seq""",
-        (event.id, event.type, event.citizen_id, Jsonb(event.to_json()), event.dedupe_key),
+        """INSERT INTO shared.outbox (id, type, subject, citizen_id, payload, dedupe_key)
+           VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (dedupe_key) DO NOTHING RETURNING seq""",
+        (event.id, event.type, event.subject, event.citizen_id, Jsonb(event.to_json()), event.dedupe_key),
     )
     row = await cur.fetchone()
     if row is None:
-        return False
-    # NOTIFY доставляется только после COMMIT; payload маленький: SSE и потребители сами читают outbox
+        cur = await conn.execute("SELECT id FROM shared.outbox WHERE dedupe_key = %s", (event.dedupe_key,))
+        return (await cur.fetchone())["id"]
+    # NOTIFY доставляется только после COMMIT. Payload маленький: SSE и потребители сами читают outbox.
     await conn.execute("SELECT pg_notify(%s, %s)", (NOTIFY_CHANNEL, f"{row['seq']}:{event.citizen_id}"))
-    return True
+    return event.id
 
 
-async def _next_batch(conn: AsyncConnection, consumer: str, topics: list[str], limit: int) -> list[dict]:
-    await conn.execute(
-        "INSERT INTO shared.consumer_offsets (consumer, last_seq) VALUES (%s, 0) ON CONFLICT DO NOTHING",
-        (consumer,),
-    )
-    cur = await conn.execute(
-        """SELECT o.seq, o.payload FROM shared.outbox o, shared.consumer_offsets c
-           WHERE c.consumer = %s AND o.seq > c.last_seq AND o.topic = ANY(%s)
-           ORDER BY o.seq LIMIT %s""",
-        (consumer, topics, limit),
-    )
-    return await cur.fetchall()
+async def consume_once(consumer: db.Context, types: Iterable[str], handler: Handler,
+                       name: str | None = None) -> bool:
+    """Обработать одно событие. False — новых событий нет или курсор занят другим экземпляром."""
+    name = name or consumer
+    types = sorted(types)
+    async with db.connect(consumer) as conn:
+        async with conn.transaction():
+            await conn.execute(
+                "INSERT INTO shared.consumer_offsets (consumer, last_seq) VALUES (%s, 0) ON CONFLICT DO NOTHING",
+                (name,),
+            )
+        async with conn.transaction():
+            cur = await conn.execute(
+                "SELECT last_seq FROM shared.consumer_offsets WHERE consumer = %s FOR UPDATE SKIP LOCKED", (name,)
+            )
+            offset = await cur.fetchone()
+            if offset is None:
+                return False
+            cur = await conn.execute(
+                "SELECT seq, payload FROM shared.outbox WHERE seq > %s AND type = ANY(%s) ORDER BY seq LIMIT 1",
+                (offset["last_seq"], types),
+            )
+            row = await cur.fetchone()
+            if row is None:
+                return False
+            await handler(Event.model_validate(row["payload"]), conn)
+            await conn.execute(
+                "UPDATE shared.consumer_offsets SET last_seq = %s, updated_at = now() WHERE consumer = %s",
+                (row["seq"], name),
+            )
+            return True
 
 
-async def consume_once(context: db.Context, topics: Iterable[str], handler: Handler,
-                       consumer: str | None = None, limit: int = 50) -> int:
-    """Обработать накопившиеся события. Возвращает, сколько обработано."""
-    consumer = consumer or context
-    topics = sorted(topics)
-    done = 0
-    async with db.connect(context) as conn:
-        rows = await _next_batch(conn, consumer, topics, limit)
-    for row in rows:
-        async with db.connect(context) as conn:
-            async with conn.transaction():
-                await handler(Event.model_validate(row["payload"]), conn)
-                await conn.execute(
-                    "UPDATE shared.consumer_offsets SET last_seq = %s, updated_at = now() WHERE consumer = %s",
-                    (row["seq"], consumer),
-                )
-        done += 1
-    return done
-
-
-async def consume(context: db.Context, topics: Iterable[str], handler: Handler,
-                  consumer: str | None = None, idle_s: float = 1.0) -> None:
-    """Бесконечный цикл потребителя: читает пачками, между пачками ждёт NOTIFY или idle_s."""
-    log.info("consumer %s started: %s", consumer or context, sorted(topics))
+async def consume(consumer: db.Context, types: Iterable[str], handler: Handler, *, name: str | None = None,
+                  idle_s: float = 0.5) -> NoReturn:
+    """Бесконечный цикл потребителя. Ошибка обработчика: откат, пауза 5 с, повтор того же события."""
+    log.info("consumer %s started: %s", name or consumer, sorted(types))
     while True:
         try:
-            n = await consume_once(context, topics, handler, consumer)
+            if await consume_once(consumer, types, handler, name):
+                continue
         except Exception:
-            log.exception("consumer %s failed, retry in 5 s", consumer or context)
+            log.exception("consumer %s failed, retry in 5 s", name or consumer)
             await asyncio.sleep(5)
             continue
-        if n == 0:
-            await asyncio.sleep(idle_s)
+        await asyncio.sleep(idle_s)

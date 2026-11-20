@@ -31,13 +31,13 @@ assistant/rag/
 ## Запуск
 
 ```bash
-docker compose up -d db migrate            # из корня репо, Postgres на :5433
+make db                                    # из корня репо: Postgres на :5433 + миграции
 cd backend && uv sync
 uv run python -m storozh rag ingest        # ~11 актов, ~30 сек (с кэшем — мгновенно)
 uv run python -m storozh rag index         # чанки + эмбеддинги
 uv run python -m storozh rag search "сосед затопил квартиру"
 uv run python -m storozh rag ask "Сколько дней отпуска мне положено?"   # нужен ANTHROPIC_API_KEY
-uv run python -m eval.run                  # recall@5 / MRR на eval/golden.jsonl
+uv run python -m storozh.assistant.eval.run                  # recall@5 / MRR на assistant/eval/golden.jsonl
 uv run python -m storozh api --reload      # GET /assist/search?q=..., POST /assist/ask
 ```
 

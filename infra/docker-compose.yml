@@ -1,9 +1,10 @@
-# docker compose up            — всё: база, миграции, API, воркеры, бот, веб
-# docker compose up db migrate — только база (для локальной разработки с uv run / npm run dev)
-# docker compose --profile mock up mock — Prism-мок по contracts/openapi.yaml на :4010
+# Из корня репо проще через Makefile: make up | make db | make mock.
+# docker compose -f infra/docker-compose.yml up             — всё: база, миграции, API, воркеры, бот, веб
+# docker compose -f infra/docker-compose.yml up db migrate  — только база (для uv run / npm run dev)
+# docker compose -f infra/docker-compose.yml --profile mock up mock — Prism-мок по contracts/openapi.yaml на :4010
 x-backend: &backend
-  build: {context: ., dockerfile: backend/Dockerfile, target: base}
-  env_file: [.env]
+  build: {context: .., dockerfile: backend/Dockerfile, target: base}
+  env_file: [../.env]
   environment:
     DATABASE_URL: postgresql://storozh:storozh@db:5432/storozh
   depends_on:
@@ -37,25 +38,25 @@ services:
 
   collector:      # Разработчик 1
     <<: *backend
-    build: {context: ., dockerfile: backend/Dockerfile, target: browser}
+    build: {context: .., dockerfile: backend/Dockerfile, target: browser}
     command: ["python", "-m", "storozh", "worker", "collector"]
 
-  guard-worker:   # Разработчик 2
+  guard-worker:   # Разработчик 3
     <<: *backend
-    build: {context: ., dockerfile: backend/Dockerfile, target: browser}
+    build: {context: .., dockerfile: backend/Dockerfile, target: browser}
     command: ["python", "-m", "storozh", "worker", "guard"]
 
-  bot:            # Разработчик 2
+  bot:            # Разработчик 3
     <<: *backend
     command: ["python", "-m", "storozh", "worker", "bot"]
 
-  assist-worker:  # Разработчик 3
+  assist-worker:  # Разработчик 2
     <<: *backend
     command: ["python", "-m", "storozh", "worker", "assistant"]
 
   web:
     build:
-      context: .
+      context: ..
       dockerfile: web/Dockerfile
       args: {NEXT_PUBLIC_API_URL: "http://localhost:8000"}
     ports: ["3000:3000"]
@@ -65,7 +66,7 @@ services:
     profiles: [mock]
     image: stoplight/prism:5
     command: ["mock", "-h", "0.0.0.0", "-d", "/contracts/openapi.yaml"]
-    volumes: [./contracts:/contracts:ro]
+    volumes: [../contracts:/contracts:ro]
     ports: ["4010:4010"]
 
 volumes:
