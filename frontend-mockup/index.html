@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  html,body{margin:0}
+  :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  img{max-width:100%}
+  [hidden]{display:none!important}
+</style>
+<title>Mening hujjatlarim</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: fixed left rail (profile card + service groups) + fluid content; detail view splits document column + AI chat, stacking on phones. Dark-first to match the portal. */
+  :root{
+    --bg:#f2f4f8; --surface:#ffffff; --surface-2:#eef1f6; --rail:#ffffff; --card:#ffffff;
+    --border:#dde3ec; --border-soft:#e8edf3;
+    --fg:#101826; --muted:#5c6880; --faint:#8a94a8;
+    --blue:#2f6df6; --teal:#17a2b8; --accent:#2f6df6; --nav-ic:#1f9d6b;
+    --good:#1f9d57; --good-bg:#e4f5ec; --warn:#c8821a; --warn-bg:#fbf0dd;
+    --crit:#d8453b; --crit-bg:#fbe6e4; --info-bg:#e7f0ff;
+    --hero1:#1f52d6; --hero2:#0f8aa8;
+    --chip:#eef2f8; --shadow:0 1px 3px rgba(16,24,38,.06),0 8px 24px rgba(16,24,38,.05);
+    --ff:"Montserrat",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#2a2a2c; --surface:#343436; --surface-2:#2f2f31; --rail:#303032; --card:#363638;
+    --border:#454547; --border-soft:#3b3b3d;
+    --fg:#e9eef1; --muted:#9a9faa; --faint:#696e79;
+    --blue:#3f7dff; --teal:#2ec5d8; --accent:#3f7dff; --nav-ic:#3fc48c;
+    --good:#43c47e; --good-bg:#15271c; --warn:#e0a94a; --warn-bg:#2a2414;
+    --crit:#ff6b60; --crit-bg:#2b1816; --info-bg:#172230;
+    --hero1:#2156c8; --hero2:#1c8a6a; --chip:#1a1d23;
+    --shadow:0 1px 3px rgba(0,0,0,.45),0 10px 30px rgba(0,0,0,.4);
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#2a2a2c; --surface:#343436; --surface-2:#2f2f31; --rail:#303032; --card:#363638;
+    --border:#454547; --border-soft:#3b3b3d;
+    --fg:#e9eef1; --muted:#9a9faa; --faint:#696e79;
+    --blue:#3f7dff; --teal:#2ec5d8; --accent:#3f7dff; --nav-ic:#3fc48c;
+    --good:#43c47e; --good-bg:#15271c; --warn:#e0a94a; --warn-bg:#2a2414;
+    --crit:#ff6b60; --crit-bg:#2b1816; --info-bg:#172230;
+    --hero1:#2156c8; --hero2:#1c8a6a; --chip:#1a1d23;
+    --shadow:0 1px 3px rgba(0,0,0,.45),0 10px 30px rgba(0,0,0,.4);
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--fg);font-family:var(--ff);line-height:1.45;font-size:14px}
+  h1,h2,h3,h4{margin:0;text-wrap:balance;font-weight:800;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  .shell{display:flex;min-height:100%;width:100%}
+  .rail{width:264px;flex:0 0 264px;background:var(--rail);padding:16px 14px 30px;
+    position:sticky;top:env(safe-area-inset-top,0px);align-self:flex-start;height:100vh;overflow-y:auto;scrollbar-width:thin}
+  .main{flex:1;min-width:0;max-width:1180px;margin-inline:auto;padding-left:max(22px,env(safe-area-inset-left,0px));
+    padding-right:max(22px,env(safe-area-inset-right,0px));padding-block:14px 48px}
+
+  .brand{display:flex;align-items:center;gap:9px;padding:4px 6px 14px}
+  .brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--teal));
+    display:grid;place-items:center;color:#fff;flex:0 0 auto}
+  .brand .wm{font-weight:800;font-size:17px;letter-spacing:-.02em}
+  .brand .wm b{color:var(--teal)}
+  .proto{font-size:9px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--warn);
+    background:var(--warn-bg);border:1px solid var(--warn);border-radius:5px;padding:2px 5px}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .topbar-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .pill-ico{display:flex;align-items:center;gap:8px;font-weight:700;font-size:12.5px}
+  .pill-ico .d{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:12px}
+  .pill-ico small{display:block;color:var(--muted);font-weight:600;font-size:11px}
+  .lang{display:flex;align-items:center;gap:4px;color:var(--muted);font-weight:700;font-size:13px}
+  .acc{color:var(--muted);display:grid;place-items:center}
+  .exitbtn{border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:10px;
+    padding:8px 20px;font-weight:700}
+
+  /* profile card with inline menu */
+  .profile{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 12px 8px;margin-bottom:16px}
+  .profile .top{text-align:center;padding-bottom:6px}
+  .avatar{width:72px;height:72px;border-radius:50%;margin:0 auto 9px;background:linear-gradient(135deg,#33507f,#17616f);
+    display:grid;place-items:center;color:#fff;font-weight:800;font-size:23px;box-shadow:0 0 0 4px var(--card),0 0 0 5px var(--border)}
+  .profile .nm{font-weight:800;font-size:14.5px}
+  .profile .sub{color:var(--muted);font-size:11.5px;margin-top:2px}
+  .pnav{display:flex;flex-direction:column;gap:1px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-soft)}
+  .pnav a,.nav a{display:flex;align-items:center;gap:12px;padding:9px 9px;border-radius:9px;color:var(--fg);
+    font-weight:600;font-size:13px}
+  .pnav a .ic,.nav a .ic{width:18px;height:18px;flex:0 0 auto;display:grid;place-items:center;color:var(--nav-ic)}
+  .pnav a:hover,.nav a:hover{background:var(--surface-2)}
+  .pnav a.on,.nav a.on{background:var(--info-bg)}
+  .pnav a.on,.nav a.on .ic{color:var(--blue)}
+  .pnav a .chev,.nav a .chev{margin-left:auto;color:var(--faint)}
+  .pnav a .badge{margin-left:auto;background:var(--crit);color:#fff;font-size:10.5px;font-weight:800;
+    border-radius:20px;padding:1px 7px;min-width:20px;text-align:center}
+  .nav a .newtag{margin-left:auto;background:var(--blue);color:#fff;font-size:9px;font-weight:800;
+    border-radius:5px;padding:2px 6px;letter-spacing:.04em}
+
+  .navsec{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:800;
+    color:var(--fg);padding:14px 9px 6px}
+  .navsec .cv{color:var(--faint)}
+  .nav{display:flex;flex-direction:column;gap:1px}
+
+  /* hero */
+  .hero{border-radius:20px;padding:26px 28px 24px;color:#fff;position:relative;overflow:hidden;
+    background:linear-gradient(105deg,var(--hero1) 0%,var(--hero2) 100%)}
+  .hero-top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;flex-wrap:wrap}
+  .hero .sub{opacity:.9;font-weight:600;font-size:15px}
+  .hero h1{font-size:30px;line-height:1.05;margin:4px 0 0}
+  .search{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.13);
+    border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:13px 16px;max-width:560px;margin-top:20px}
+  .search svg{opacity:.85}
+  .search input{flex:1;background:none;border:0;outline:0;color:#fff;font-size:14px;font-family:inherit;min-width:0}
+  .search input::placeholder{color:rgba(255,255,255,.72)}
+  .weather{text-align:right;min-width:150px}
+  .weather .wrow{display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+  .wpill{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:18px;
+    padding:4px 11px;font-size:11.5px;font-weight:700}
+  .weather .temps{font-size:26px;font-weight:800;display:flex;gap:12px;justify-content:flex-end;align-items:center}
+  .weather .temps .sun{font-size:22px}
+  .weather .temps small{opacity:.8;font-weight:700}
+
+  /* service strip — blue tile, inset themed thumbnail, white label (matches portal) */
+  .strip{display:flex;gap:14px;overflow-x:auto;padding:6px 2px 12px;margin-top:16px;scrollbar-width:thin}
+  .scard{flex:0 0 160px;border-radius:16px;cursor:pointer;padding:9px 9px 2px;
+    background:linear-gradient(180deg,#2f6bd4 0%,#2f6bd4 65%,#2a5fc0 100%);transition:transform .1s}
+  :root[data-theme="dark"] .scard,:root:not([data-theme="light"]) .scard{background:linear-gradient(180deg,#244f9e 0%,#213f7e 100%)}
+  @media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .scard{background:linear-gradient(180deg,#2f6bd4 0%,#2a5fc0 100%)}}
+  .scard:hover{transform:translateY(-3px)}
+  .scard .thumb{height:134px;border-radius:12px;display:grid;place-items:center;position:relative;overflow:hidden;
+    color:rgba(255,255,255,.95)}
+  .scard .thumb .wm{position:absolute;right:-14px;bottom:-14px;opacity:.16;color:#fff}
+  .scard .thumb .wm svg{width:96px;height:96px}
+  .scard .thumb .fg{position:relative;z-index:1;width:46px;height:46px;border-radius:13px;
+    background:rgba(255,255,255,.18);backdrop-filter:blur(2px);display:grid;place-items:center;border:1px solid rgba(255,255,255,.25)}
+  .scard .thumb .fg svg{width:26px;height:26px}
+  .scard .nb{position:absolute;top:9px;left:9px;z-index:2;background:#fff;color:#2f6bd4;font-size:9px;font-weight:800;
+    border-radius:6px;padding:3px 7px;letter-spacing:.05em}
+  .scard .lbl{padding:11px 8px 13px;font-weight:700;font-size:12.5px;color:#fff;line-height:1.3;min-height:48px}
+
+  .sec-h{display:flex;align-items:center;justify-content:space-between;margin:26px 2px 14px}
+  .sec-h h2{font-size:20px}
+  .sec-h a{color:var(--blue);font-weight:700;font-size:13px;display:inline-flex;gap:6px;align-items:center}
+
+  /* rate service block */
+  .rate{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-top:18px;
+    display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .rate .pin{width:52px;height:52px;flex:0 0 auto;display:grid;place-items:center}
+  .rate .rt{flex:1;min-width:180px}
+  .rate .rt h3{font-size:19px;color:var(--teal)}
+  .rate .rt p{color:var(--muted);font-size:13px;margin:3px 0 0}
+  .receipt{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:12px 15px;min-width:230px}
+  .receipt .r1{display:flex;gap:14px;align-items:center;color:var(--muted);font-size:11.5px;font-weight:700;margin-bottom:5px}
+  .receipt .r2{font-size:13px;font-weight:700;margin-bottom:8px}
+  .receipt .r3{display:flex;align-items:center;gap:10px;justify-content:space-between}
+  .stars{color:#e8b63a;letter-spacing:2px;font-size:15px}
+
+  /* promo (feature) */
+  .promo{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;
+    display:flex;gap:16px;align-items:center;flex-wrap:wrap;border-left:3px solid var(--blue);margin-top:18px}
+  .promo .pi{width:50px;height:50px;border-radius:13px;background:var(--info-bg);color:var(--blue);display:grid;place-items:center;flex:0 0 auto}
+  .promo .pt{flex:1;min-width:220px}
+  .promo .pt h3{font-size:16px}
+  .promo .pt p{color:var(--muted);margin:5px 0 0;font-size:13px}
+  .alertdot{display:inline-flex;align-items:center;gap:6px;color:var(--crit);font-weight:800;font-size:11.5px;margin-bottom:5px}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:11px;padding:11px 20px;font-weight:800;font-size:13.5px;border:0}
+  .btn-pri{background:var(--blue);color:#fff}
+  .btn-pri:hover{filter:brightness(1.07)}
+  .btn-ghost{background:var(--surface);color:var(--fg);border:1px solid var(--border)}
+  .btn-ghost:hover{background:var(--surface-2)}
+
+  /* spheres grid */
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .sph{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 18px 16px;position:relative;min-height:168px;
+    display:flex;flex-direction:column}
+  .sph h4{font-size:15px;margin-bottom:12px}
+  .sph ul{list-style:none;margin:0 0 auto;padding:0;display:flex;flex-direction:column;gap:9px}
+  .sph li{color:var(--muted);font-size:12.5px;display:flex;gap:8px;max-width:78%}
+  .sph li::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;margin-top:6px;flex:0 0 auto;color:var(--faint)}
+  .sph .all{color:var(--muted);font-size:12.5px;font-weight:700;margin-top:14px;display:inline-flex;align-items:center;gap:5px}
+  .sph .sico{position:absolute;right:16px;bottom:16px;width:50px;height:50px;border-radius:50%;
+    display:grid;place-items:center;border:1.5px solid currentColor;opacity:.85}
+
+  /* ===== Documents view ===== */
+  .page-h h1{font-size:24px}
+  .page-h p{color:var(--muted);margin:5px 0 0}
+  .monitor{background:var(--warn-bg);border:1px solid var(--warn);border-radius:14px;padding:14px 16px;
+    display:flex;gap:12px;align-items:center;margin:16px 0;flex-wrap:wrap}
+  .monitor .mi{width:38px;height:38px;border-radius:10px;background:var(--warn);color:#fff;display:grid;place-items:center;flex:0 0 auto}
+  .monitor .mt{flex:1;min-width:200px}
+  .monitor .mt b{font-size:13.5px}
+  .monitor .mt span{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+  .chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:20px;
+    padding:7px 14px;font-weight:700;font-size:12.5px}
+  .chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .doclist{display:flex;flex-direction:column;gap:11px}
+  .doc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 16px;
+    display:flex;gap:14px;align-items:center;text-align:left;width:100%;transition:transform .08s}
+  .doc:hover{transform:translateY(-1px);border-color:var(--blue)}
+  .doc .dic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;background:var(--info-bg);color:var(--blue)}
+  .doc .dmain{flex:1;min-width:0}
+  .doc .dtitle{font-weight:800;font-size:14.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .doc .dmeta{color:var(--muted);font-size:12px;margin-top:4px;display:flex;gap:7px 12px;flex-wrap:wrap;align-items:center}
+  .doc .dmeta .src{display:inline-flex;align-items:center;gap:5px;font-weight:700}
+  .doc .dright{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:0 0 auto}
+  .doc .chev{color:var(--faint)}
+  .badge-s{font-size:10.5px;font-weight:800;border-radius:20px;padding:3px 9px;white-space:nowrap}
+  .b-good{background:var(--good-bg);color:var(--good)}
+  .b-warn{background:var(--warn-bg);color:var(--warn)}
+  .b-crit{background:var(--crit-bg);color:var(--crit)}
+  .b-info{background:var(--info-bg);color:var(--blue)}
+  .b-new{background:var(--blue);color:#fff}
+  .vcount{color:var(--faint);font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+
+  /* ===== Detail view ===== */
+  .back{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-weight:700;font-size:13px;background:none;border:0;padding:6px 2px;margin-bottom:8px}
+  .back:hover{color:var(--fg)}
+  .detail{display:grid;grid-template-columns:1fr 390px;gap:18px;align-items:start}
+  .dcol{min-width:0;display:flex;flex-direction:column;gap:16px}
+  .dhead{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
+  .dhead .row{display:flex;gap:14px;align-items:flex-start}
+  .dhead .bigic{width:54px;height:54px;border-radius:14px;background:var(--info-bg);color:var(--blue);display:grid;place-items:center;flex:0 0 auto}
+  .dhead h1{font-size:20px;line-height:1.2}
+  .dhead .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .kv{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 18px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-soft)}
+  .kv div span{display:block;color:var(--faint);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  .kv div b{font-size:13.5px;font-weight:700}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px}
+  .card .ch{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+  .card .ch h3{font-size:15px}
+  .card .ch .tagai{margin-left:auto;font-size:10.5px;font-weight:800;color:var(--teal);background:var(--good-bg);border-radius:6px;padding:3px 8px}
+  .ai-sum{font-size:13.5px}.ai-sum p{margin:0 0 10px}
+  .ai-sum .flag{background:var(--crit-bg);border:1px solid var(--crit);border-radius:10px;padding:10px 12px;font-size:12.5px;display:flex;gap:9px}
+  .ai-sum .flag .fi{color:var(--crit);flex:0 0 auto}
+  .tl{display:flex;flex-direction:column;margin-left:4px}
+  .tl .ev{display:flex;gap:13px;padding-bottom:16px;position:relative}
+  .tl .ev:last-child{padding-bottom:0}
+  .tl .ev::before{content:"";position:absolute;left:7px;top:18px;bottom:-2px;width:2px;background:var(--border)}
+  .tl .ev:last-child::before{display:none}
+  .tl .dot{width:16px;height:16px;border-radius:50%;border:3px solid var(--card);flex:0 0 auto;margin-top:2px;box-shadow:0 0 0 1px var(--border);background:var(--muted);z-index:1}
+  .tl .ev.cur .dot{background:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+  .tl .ev.alert .dot{background:var(--crit);box-shadow:0 0 0 1px var(--crit)}
+  .tl .ec b{font-size:13px;font-weight:700}
+  .tl .ec .dt{color:var(--faint);font-size:11.5px;font-weight:700;margin-left:6px}
+  .tl .ec p{color:var(--muted);font-size:12.5px;margin:3px 0 0}
+  .actbar h3{font-size:15px;margin-bottom:4px}
+  .actbar .note{color:var(--muted);font-size:12.5px;margin-bottom:14px}
+  .acts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .act{display:flex;gap:11px;align-items:center;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:12px;font-weight:700;font-size:13px;color:var(--fg)}
+  .act:hover{border-color:var(--blue);background:var(--surface-2)}
+  .act .ai2{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto}
+  .act small{display:block;color:var(--muted);font-weight:600;font-size:11px;margin-top:1px}
+  .act.danger .ai2{background:var(--crit-bg);color:var(--crit)}
+  .act.warnc .ai2{background:var(--warn-bg);color:var(--warn)}
+  .act.okc .ai2{background:var(--good-bg);color:var(--good)}
+  .act.infoc .ai2{background:var(--info-bg);color:var(--blue)}
+  .chat{background:var(--card);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;
+    position:sticky;top:calc(env(safe-area-inset-top,0px) + 14px);height:calc(100vh - 90px);min-height:480px;overflow:hidden}
+  .chat-h{padding:15px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .chat-h .ca{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff;display:grid;place-items:center;flex:0 0 auto}
+  .chat-h h3{font-size:14px}
+  .chat-h small{color:var(--muted);font-size:11.5px;font-weight:700}
+  .chat-h .lv{margin-left:auto;font-size:10px;font-weight:800;color:var(--good);background:var(--good-bg);border-radius:6px;padding:3px 7px;display:inline-flex;align-items:center;gap:4px}
+  .chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+  .msg{max-width:88%;padding:11px 13px;border-radius:14px;font-size:13px;line-height:1.5}
+  .msg.bot{background:var(--surface-2);border:1px solid var(--border-soft);border-bottom-left-radius:5px;align-self:flex-start}
+  .msg.me{background:var(--blue);color:#fff;border-bottom-right-radius:5px;align-self:flex-end}
+  .msg .cite{display:block;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--teal);font-weight:700}
+  .msg.me .cite{color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.25)}
+  .typing{display:inline-flex;gap:4px;align-items:center}
+  .typing i{width:6px;height:6px;border-radius:50%;background:var(--faint);animation:bl 1s infinite}
+  .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+  @keyframes bl{0%,60%,100%{opacity:.3}30%{opacity:1}}
+  .sugs{display:flex;gap:7px;flex-wrap:wrap;padding:0 16px 10px}
+  .sug{border:1px solid var(--border);background:var(--surface-2);color:var(--blue);border-radius:18px;padding:7px 12px;font-weight:700;font-size:12px}
+  .sug:hover{background:var(--info-bg)}
+  .chat-in{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--border)}
+  .chat-in input{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;color:var(--fg);font-family:inherit;font-size:13px;outline:0;min-width:0}
+  .chat-in input:focus{border-color:var(--blue)}
+  .chat-in button{width:42px;flex:0 0 auto;border:0;border-radius:12px;background:var(--blue);color:#fff;display:grid;place-items:center}
+
+  .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+    background:var(--fg);color:var(--bg);padding:13px 20px;border-radius:12px;font-weight:700;font-size:13px;
+    box-shadow:0 12px 40px rgba(0,0,0,.3);z-index:50;max-width:92vw;display:flex;align-items:center;gap:10px;
+    opacity:0;pointer-events:none;transition:opacity .2s}
+  .toast.show{opacity:1}
+  .mob-menu{display:none}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:39;opacity:0;transition:opacity .22s}
+  .foot{color:var(--faint);font-size:11.5px;margin-top:30px;border-top:1px solid var(--border-soft);padding-top:16px;line-height:1.7}
+
+  @media (max-width:980px){.detail{grid-template-columns:1fr}.chat{position:relative;top:0;height:auto;min-height:0}.chat-body{max-height:360px}.grid4{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:760px){
+    /* sidebar becomes a slide-in drawer */
+    .rail{position:fixed;left:0;top:0;height:100%;z-index:40;width:286px;max-width:86vw;
+      transform:translateX(-100%);transition:transform .25s ease;box-shadow:0 0 40px rgba(0,0,0,.5);
+      padding-top:calc(16px + env(safe-area-inset-top,0px));padding-left:max(14px,env(safe-area-inset-left,0px))}
+    body.nav-open .rail{transform:none}
+    body.nav-open .scrim{display:block;opacity:1}
+    .mob-menu{display:grid;place-items:center;width:42px;height:42px;border-radius:11px;border:1px solid var(--border);background:var(--surface);color:var(--fg)}
+    .main{max-width:100%}
+    .acts{grid-template-columns:1fr}
+    .topbar-actions{gap:12px}
+    .pill-ico small{display:none}
+    .pill-ico{gap:0}
+    .exitbtn{padding:8px 14px}
+    .hero{padding:20px}
+    .hero h1{font-size:24px}
+    .weather{min-width:0}
+    .rate{gap:14px}.receipt{min-width:100%}
+    .sph{min-height:0;padding-bottom:62px}
+  }
+  @media (max-width:480px){
+    .grid4{grid-template-columns:1fr}
+    .kv{grid-template-columns:1fr}
+    .hero h1{font-size:22px}
+    .hero-top{gap:10px}
+    .search input{font-size:13px}
+    .scard{flex-basis:144px}
+    .sec-h h2{font-size:18px}
+    .lang,.acc{display:none}
+    .detail{gap:14px}
+    .doc{padding:13px}
+    .page-h h1{font-size:21px}
+  }
+  @media (max-width:760px) and (min-width:481px){.grid4{grid-template-columns:repeat(2,1fr)}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap">
+
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4 10-10" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="wm">e-<b>davlat</b></span>
+    </div>
+    <div class="profile">
+      <div class="top">
+        <div class="avatar">IA</div>
+        <div class="nm">Isfandiyorov Akmal</div>
+        <div class="sub">JShShIR 3******* • Toshkent</div>
+      </div>
+      <nav class="pnav" aria-label="Shaxsiy">
+        <a href="#home"><span class="ic" data-ic="user"></span>Profil<span class="chev" data-ic="chev"></span></a>
+        <a href="#home"><span class="ic" data-ic="list"></span>So'rovlar</a>
+        <a href="#home"><span class="ic" data-ic="bell"></span>Bildirishnomalar<span class="badge">10</span></a>
+        <a href="#home"><span class="ic" data-ic="warn"></span>Jarimalar</a>
+        <a href="#home"><span class="ic" data-ic="plug"></span>Kommunal to'lovlar</a>
+        <a href="#home"><span class="ic" data-ic="wallet"></span>To'lovlar tarixi</a>
+        <a href="#home"><span class="ic" data-ic="gear"></span>Sozlamalar</a>
+      </nav>
+    </div>
+    <div class="navsec">Xizmatlar<span class="cv" data-ic="cdown"></span></div>
+    <nav class="nav" aria-label="Xizmatlar">
+      <a href="#documents" id="nav-docs"><span class="ic" data-ic="folder"></span>Mening hujjatlarim<span class="newtag">YANGI</span></a>
+      <a href="#home"><span class="ic" data-ic="star"></span>Ommabop xizmatlar</a>
+      <a href="#home"><span class="ic" data-ic="grid"></span>Sohalar</a>
+      <a href="#home"><span class="ic" data-ic="card"></span>Xizmat to'lovi</a>
+      <a href="#home"><span class="ic" data-ic="map"></span>Joylar xaritasi</a>
+      <a href="#home"><span class="ic" data-ic="reg"></span>Yagona reyestr</a>
+      <a href="#home"><span class="ic" data-ic="layers"></span>Proaktiv va kompozit xizmatlar</a>
+      <a href="#home"><span class="ic" data-ic="phone"></span>Mobil ilovalar</a>
+    </nav>
+    <div class="navsec">Yordam va qo'llab-quvvatlash<span class="cv" data-ic="cdown"></span></div>
+    <nav class="nav" aria-label="Yordam">
+      <a href="#home"><span class="ic" data-ic="epart"></span>E-ishtirok</a>
+      <a href="#home"><span class="ic" data-ic="life"></span>Hayotiy vaziyatlar</a>
+      <a href="#home"><span class="ic" data-ic="help"></span>Ko'p beriladigan savollar</a>
+      <a href="#home"><span class="ic" data-ic="globe"></span>Chet elliklar uchun</a>
+      <a href="#home"><span class="ic" data-ic="news"></span>Yangiliklar</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="mob-menu" aria-label="Menyu" onclick="toggleNav()"><span data-ic="menu"></span></button>
+        <span class="proto">Prototip • Demo</span>
+      </div>
+      <div class="topbar-actions">
+        <span class="pill-ico"><span class="d" style="background:#d6417d">112</span><span>SOS</span></span>
+        <span class="pill-ico"><span class="d" style="background:var(--blue)">1242</span><span>Fikr-mulohaza</span></span>
+        <span class="lang">UZ <span data-ic="cdown"></span></span>
+        <span class="acc" data-ic="access"></span>
+        <button class="exitbtn">Chiqish</button>
+      </div>
+    </div>
+    <div id="view"></div>
+    <div class="foot" id="foot"></div>
+  </main>
+</div>
+<div class="scrim" id="scrim" onclick="closeNav()"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+function ic(n){const p={
+  user:'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0',
+  list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  bell:'M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0',
+  warn:'M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.4 3.9a2 2 0 00-3.4 0zM12 9v4M12 17h.01',
+  plug:'M9 2v6M15 2v6M7 8h10v3a5 5 0 01-10 0zM12 16v5',
+  wallet:'M3 7h16a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2zM3 7l1-3h13l1 3M17 13h.01',
+  gear:'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7 1.1V21a2 2 0 11-4 0v-.1A1.6 1.6 0 005 19.4l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.6 1.6 0 003 12H3a2 2 0 110-4h.1A1.6 1.6 0 004.6 5l-.1-.1a2 2 0 112.8-2.8l.1.1A1.6 1.6 0 0010 3V3a2 2 0 114 0v.1a1.6 1.6 0 002.7 1.1l.1-.1a2 2 0 112.8 2.8l-.1.1A1.6 1.6 0 0021 10h0a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z',
+  folder:'M3 7a2 2 0 012-2h4l2 3h8a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2z',
+  star:'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.9L12 16.9 6.8 19.2l1-5.9L3.5 9.2l5.9-.9z',
+  grid:'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
+  card:'M2 7h20v10H2zM2 11h20',
+  map:'M9 3L3 6v15l6-3 6 3 6-3V3l-6 3-6-3zM9 3v15M15 6v15',
+  reg:'M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2zM9 8h6M9 12h6M9 16h4',
+  layers:'M12 2l9 5-9 5-9-5 9-5zM3 12l9 5 9-5M3 17l9 5 9-5',
+  phone:'M7 2h10a2 2 0 012 2v16a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2zM11 18h2',
+  epart:'M8 6h13M8 12h13M8 18h8M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11',
+  life:'M12 22a10 10 0 100-20 10 10 0 000 20zM12 8v4l3 2M12 2v3M12 19v3',
+  help:'M12 22a10 10 0 100-20 10 10 0 000 20zM9.1 9a3 3 0 015.8 1c0 2-3 2.5-3 4M12 17h.01',
+  globe:'M12 22a10 10 0 100-20 10 10 0 000 20zM2 12h20M12 2a15 15 0 010 20 15 15 0 010-20z',
+  news:'M4 4h13v16H4zM17 8h3v10a2 2 0 01-2 2M8 8h5M8 12h5M8 16h5',
+  chev:'M9 18l6-6-6-6',cdown:'M6 9l6 6 6-6',access:'M12 5a2 2 0 100-4 2 2 0 000 4zM4 8h16M9 22l3-7 3 7M12 8v4',
+  menu:'M3 6h18M3 12h18M3 18h18',
+  shield:'M12 2l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V5z',
+  doc:'M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM14 3v5h5',
+  car:'M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11M5 11h14v5H5zM7 16v2M17 16v2M7.5 13.5h.01M16.5 13.5h.01',
+  home2:'M3 11l9-8 9 8M5 10v10h14V10',
+  biz:'M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5M9 11h.01M15 11h.01',
+  ring:'M12 14a4 4 0 100-8 4 4 0 000 8zM8.5 6.5L7 2h10l-1.5 4.5',
+  tax:'M6 2h9l5 5v15H6zM13 2v5h5M9 13l6 6M15 13l-6 6',
+  send:'M22 2L11 13M22 2l-7 20-4-9-9-4z',
+  back:'M19 12H5M12 19l-7-7 7-7',
+  search:'M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.3-4.3',
+  block:'M12 22a10 10 0 100-20 10 10 0 000 20zM5 5l14 14',
+  gavel:'M14 11l-7 7a2 2 0 01-3-3l7-7M12 7l5 5M10 5l7 7M16 3l5 5',
+  x:'M18 6L6 18M6 6l12 12',check2:'M20 6L9 17l-5-5',
+  file2:'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M9 15h6',
+  info:'M12 22a10 10 0 100-20 10 10 0 000 20zM12 8h.01M11 12h1v5h1',
+  bolt:'M13 2L3 14h7l-1 8 10-12h-7z',sun:'M12 17a5 5 0 100-10 5 5 0 000 10zM12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1',
+  alpha:'M4 20L10 4l6 16M6 14h8M18 10h3v10h-3zM18 10a3 3 0 013-3',
+  baby:'M12 11a2 2 0 100-4 2 2 0 000 4zM8 15c1 1.5 2.5 2 4 2s3-.5 4-2M9 9h.01M15 9h.01M12 2a5 5 0 015 5',
+  cash:'M12 15a3 3 0 100-6 3 3 0 000 6zM2 7h20v10H2zM6 10v4M18 10v4',
+  sos:'M12 2a7 7 0 017 7c0 5-7 13-7 13S5 14 5 9a7 7 0 017-7zM10 9h4M12 7v4',
+  shield2:'M12 2l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V5zM9 11l2 2 4-4',
+  penalty:'M4 4h16v4H4zM4 10h16v10H4zM8 14h8',
+  bus:'M4 6a2 2 0 012-2h12a2 2 0 012 2v10H4zM4 16h16M4 20v-2M20 20v-2M7 12h.01M17 12h.01',
+  tcard:'M2 6h20v12H2zM2 10h20M6 15h5',
+  window:'M4 4h16v16H4zM4 9h16M4 14l16-3',
+  career:'M4 20l5-5 3 3 8-9M20 6v4M20 6h-4',
+  income:'M3 3v18h18M7 14l4-4 3 3 5-6',
+  credit:'M3 6h18v12H3zM3 10h18M7 15h4M15 15h2',
+  health:'M3 12h4l2-6 4 12 2-6h6',
+  briefcase:'M3 8h18v12H3zM8 8V5a2 2 0 012-2h4a2 2 0 012 2v3',
+  grad:'M22 9L12 5 2 9l10 4 10-4zM6 11v5a6 3 0 0012 0v-5',
+  social:'M9 12a3 3 0 100-6 3 3 0 000 6zM3 20a6 6 0 0112 0M17 11a3 3 0 10-2-5M15 20h6a5 5 0 00-4-5',
+  scale:'M12 3v18M6 21h12M5 7h14M5 7l-3 7a4 4 0 008 0zM19 7l-3 7a4 4 0 008 0z',
+  leaf:'M11 20A7 7 0 014 13c0-5 4-9 16-10 1 8-3 16-9 17zM4 20c3-6 7-9 11-10',
+  subsidy:'M12 22a10 10 0 100-20 10 10 0 000 20zM12 7v10M9.5 9.5a2.5 2 0 015 0c0 1.5-5 1.5-5 3a2.5 2 0 005 0',
+  family:'M7 11a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM17 11a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM2 20a5 5 0 0110 0M12 20a5 5 0 0110 0',
+  building:'M3 21h18M6 21V5a1 1 0 011-1h6a1 1 0 011 1v16M14 21V9h4a1 1 0 011 1v11M9 8h.01M9 12h.01M9 16h.01',
+  passport:'M6 2h12v20H6zM10 7a2 2 0 104 0 2 2 0 00-4 0zM9 13h6M9 16h6',
+  inquiry:'M21 15a2 2 0 01-2 2H8l-5 4V5a2 2 0 012-2h14a2 2 0 012 2zM8 10h.01M12 10h.01M16 10h.01',
+  assets:'M3 21h18M5 21V8l7-5 7 5v13M9 12h6M9 16h6M12 3v5'
+}[n]||'';
+  return '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+p.split('M').filter(Boolean).map(d=>'<path d="M'+d+'"/>').join('')+'</svg>';
+}
+
+/* ---------- documents data ---------- */
+const DOCS=[
+ {id:'uy-sotuv',icon:'home2',title:"Uy-joy oldi-sotdi shartnomasi",src:"Davlat notarial reyestri",srcIc:'reg',
+  status:['Tekshiruv talab etiladi','b-crit'],isNew:true,date:"21.11.2026 01:14",num:"№ UZ-2026-8841207",vers:3,
+  flag:"Siz boshlamagan bitim. Sizning nomingizdagi ko'chmas mulk bo'yicha yangi oldi-sotdi shartnomasi ro'yxatga olindi.",
+  summary:["Toshkent sh., Yunusobod t., 19-mavze, 4-uy, 56-xonadon bo'yicha oldi-sotdi shartnomasi 21.11.2026 sanasida notarial tasdiqlangan.",
+    "Shartnoma qiymati: 920 000 000 so'm. Sotuvchi sifatida sizning JShShIR ko'rsatilgan, lekin imzo ishonchnoma asosida qo'yilgan."],
+  kv:[["Hujjat turi","Oldi-sotdi shartnomasi"],["Obyekt","4-uy, 56-xonadon"],["Qiymati","920 000 000 so'm"],["Holati","Notarial tasdiqlangan"]],
+  tl:[{t:"Shartnoma ro'yxatga olindi",d:"21.11.2026 01:14",p:"Ishonchnoma (№ I-77213) asosida uchinchi shaxs tomonidan.",cls:'alert'},
+    {t:"Notarial tasdiqlash",d:"21.11.2026 01:02",p:"42-notarial idora, Toshkent.",cls:''},
+    {t:"Ishonchnoma kiritildi",d:"18.11.2026 16:30",p:"Vakillik huquqi berilgan.",cls:''}],
+  qa:[{q:"Bu shartnoma qonuniymi?",a:"Shartnoma shaklan notarial tasdiqlangan, biroq u siz tomoningizdan emas, ishonchnoma (№ I-77213) asosida imzolangan. Fuqarolik kodeksining 110-moddasiga ko'ra, ishonchnoma egasi berilgan vakolat doirasidagina harakat qilishi mumkin. Agar siz bunday ishonchnoma bermagan bo'lsangiz, bitimni haqiqiy emas deb topish uchun asos bor.",c:"lex.uz • FK 110-modda, 174-modda"},
+    {q:"Qanday himoyalanishim mumkin?",a:"«Yuridik himoya» bo'limidan bitimni «Bloklash» tugmasi orqali to'xtatib turishingiz mumkin — ro'yxatdan o'tkazish egasi tasdiqlagunicha pauzaga olinadi. Shuningdek, notariusga va IIV ga e'tiroz arizasini shu yerdan yuborishingiz mumkin.",c:"lex.uz • Notariat to'g'risidagi qonun 24-modda"},
+    {q:"Ishonchnomani bekor qilsam bo'ladimi?",a:"Ha. FKning 115-moddasiga ko'ra ishonchnoma bergan shaxs uni istalgan vaqtda bekor qilishi mumkin. «Bekor qilish» amali orqali ariza shakllantiriladi va notarial reyestrga yuboriladi.",c:"lex.uz • FK 115-modda"}]},
+ {id:'pasport',icon:'passport',title:"Shaxsiy identifikatsiya ID-karta",src:"IIV — Pasport tizimi",srcIc:'shield',
+  status:['Amal qiladi','b-good'],isNew:false,date:"Yangilangan 04.08.2026",num:"AD 1234567",vers:2,
+  summary:["Shaxsingizni tasdiqlovchi ID-karta amal qiladi. Amal qilish muddati 2029-yil 12-mayigacha.","Oxirgi yangilanish: yashash manzili o'zgartirilgan (2026-yil avgust)."],
+  kv:[["Seriya va raqam","AD 1234567"],["JShShIR","3**********"],["Berilgan sana","12.05.2019"],["Amal qiladi","12.05.2029"]],
+  tl:[{t:"Manzil o'zgartirildi",d:"04.08.2026",p:"Yangi manzil kiritildi.",cls:'cur'},{t:"ID-karta berildi",d:"12.05.2019",p:"Boshlang'ich hujjat.",cls:''}],
+  qa:[{q:"ID-kartam qachon tugaydi?",a:"Sizning ID-kartangiz amal qilish muddati — 2029-yil 12-may. Hujjatni muddati tugashidan 1 oy oldin almashtirish tavsiya etiladi.",c:"lex.uz • Fuqarolarni ro'yxatga olish tartibi"},
+    {q:"Yashash manzilini qanday o'zgartiraman?",a:"Manzilni o'zgartirish «Davlat xizmatlari» orqali onlayn amalga oshiriladi. Oxirgi o'zgartirish 04.08.2026 da muvaffaqiyatli kiritilgan.",c:"lex.uz • Ro'yxatga olish qoidalari 7-band"}]},
+ {id:'avto',icon:'car',title:"Avtomobil ro'yxatdan o'tkazish guvohnomasi",src:"YHXBB reyestri",srcIc:'car',
+  status:['Amal qiladi','b-good'],isNew:false,date:"15.03.2024",num:"01 A 123 BC",vers:1,
+  summary:["Chevrolet Cobalt, 2022-y., davlat raqami 01 A 123 BC sizning nomingizga ro'yxatdan o'tkazilgan.","Hujjat bo'yicha cheklovlar yoki garov qayd etilmagan."],
+  kv:[["Davlat raqami","01 A 123 BC"],["Markasi","Chevrolet Cobalt"],["Yili","2022"],["Cheklovlar","Yo'q"]],
+  tl:[{t:"Ro'yxatga olindi",d:"15.03.2024",p:"Egalik huquqi.",cls:'cur'}],
+  qa:[{q:"Avtomobilimda cheklov bormi?",a:"Ayni vaqtda transport vositasi bo'yicha hech qanday garov, hibs yoki ro'yxatdan o'tkazishga cheklov qayd etilmagan.",c:"lex.uz • Transport vositalarini ro'yxatga olish"},
+    {q:"Sotish uchun nima kerak?",a:"Oldi-sotdi onlayn YHXBB orqali rasmiylashtiriladi: ikkala tomon JShShIR si, texnik ko'rik va davlat boji to'lovi talab etiladi.",c:"lex.uz • TV oldi-sotdisi tartibi"}]},
+ {id:'mchj',icon:'biz',title:"«AKMAL SAVDO» MChJ — ro'yxatga olish guvohnomasi",src:"Soliq qo'mitasi reyestri",srcIc:'biz',
+  status:['Faol','b-good'],isNew:false,date:"Oxirgi hisobot 10.2026",num:"STIR 302145789",vers:4,
+  summary:["Yuridik shaxs faol holatda. Soliq qarzi mavjud emas.","Keyingi soliq hisoboti muddati — 25.12.2026."],
+  kv:[["STIR","302145789"],["Faoliyat turi","Chakana savdo"],["Holati","Faol"],["Soliq qarzi","0 so'm"]],
+  tl:[{t:"Hisobot topshirildi",d:"10.2026",p:"3-chorak.",cls:'cur'},{t:"Direktor o'zgardi",d:"02.2026",p:"Reyestrga kiritildi.",cls:''},{t:"Ro'yxatga olindi",d:"11.2021",p:"Tashkil etilgan.",cls:''}],
+  qa:[{q:"Soliq qarzim bormi?",a:"Hozirda yuridik shaxs bo'yicha soliq qarzi mavjud emas. Keyingi hisobot muddati 25.12.2026.",c:"lex.uz • Soliq kodeksi"},
+    {q:"Keyingi hisobot qachon?",a:"4-chorak soliq hisobotini 2026-yil 25-dekabrgacha topshirish lozim.",c:"lex.uz • SK 83-modda"}]},
+ {id:'nikoh',icon:'ring',title:"Nikoh guvohnomasi",src:"FHDYo reyestri",srcIc:'ring',
+  status:['Amal qiladi','b-good'],isNew:false,date:"20.09.2020",num:"№ FH-556120",vers:1,
+  summary:["Nikoh 2020-yil 20-sentyabrda davlat ro'yxatidan o'tkazilgan va amalda.","Hujjat o'zgarishsiz saqlanmoqda."],
+  kv:[["Hujjat","Nikoh guvohnomasi"],["Sana","20.09.2020"],["FHDYo","Yunusobod"],["Holati","Amal qiladi"]],
+  tl:[{t:"Ro'yxatga olindi",d:"20.09.2020",p:"Davlat ro'yxati.",cls:'cur'}],
+  qa:[{q:"Dublikat olsam bo'ladimi?",a:"Ha, nikoh guvohnomasining dublikatini «Davlat xizmatlari» orqali onlayn buyurtma qilish mumkin. Davlat boji talab etiladi.",c:"lex.uz • FHDYo to'g'risidagi qonun"}]},
+ {id:'ipoteka',icon:'home2',title:"Ipoteka kredit shartnomasi",src:"Bank — Kredit byurosi",srcIc:'card',
+  status:["Keyingi to'lov yaqin",'b-warn'],isNew:false,date:"To'lov 25.11.2026",num:"№ IP-7781",vers:2,
+  summary:["Ipoteka krediti bo'yicha navbatdagi to'lov muddati — 25.11.2026.","Qolgan qarz: 184 000 000 so'm. Muddati: 2034-yilgacha."],
+  kv:[["Oylik to'lov","3 150 000 so'm"],["Qolgan qarz","184 000 000 so'm"],["Stavka","18% yillik"],["Muddat","2034-yilgacha"]],
+  tl:[{t:"To'lov amalga oshirildi",d:"25.10.2026",p:"O'z vaqtida.",cls:'cur'},{t:"Shartnoma imzolandi",d:"06.2019",p:"Ipoteka ochildi.",cls:''}],
+  qa:[{q:"Keyingi to'lovim qachon?",a:"Navbatdagi to'lov 2026-yil 25-noyabrda, summa 3 150 000 so'm. Kechikish uchun shartnoma bo'yicha penya hisoblanadi.",c:"lex.uz • FK 324-modda"}]}
+];
+
+let curDoc=null, filter='all';
+const V=document.getElementById('view');
+function go(view,id){if(view==='detail'){curDoc=id;location.hash='doc-'+id;}else location.hash=view;closeNav();}
+function toggleNav(){document.body.classList.toggle('nav-open');}
+function closeNav(){document.body.classList.remove('nav-open');}
+window.addEventListener('hashchange',route);
+function route(){
+  const h=(location.hash||'#home').slice(1);
+  document.querySelectorAll('.nav a,.pnav a').forEach(a=>a.classList.remove('on'));
+  if(h.startsWith('doc-')){curDoc=h.slice(4);renderDetail();document.getElementById('nav-docs').classList.add('on');}
+  else if(h==='documents'){renderDocs();document.getElementById('nav-docs').classList.add('on');}
+  else renderHome();
+  window.scrollTo(0,0);
+}
+
+/* ---------- home ---------- */
+function renderHome(){
+  document.getElementById('foot').innerHTML=foot();
+  const strip=[
+    ['folder','Mening hujjatlarim','#2f6df6,#17a2b8','YANGI','documents'],
+    ['alpha','Lotin alifbosi','#4a6fd4,#6d4ad4'],['baby','Bog\'cha','#d98a3a,#d9b63a'],
+    ['cash','Keshbekni qaytarish','#1f9d6b,#17a2b8'],['sos','SOS yuborish','#d6417d,#d64141'],
+    ['shield2','Avto sug\'urta','#2f6df6,#2fb6f6'],['penalty','Jarima ballari','#8a6ad4,#d64a9d'],
+    ['bus','Yo\'lovchi tashish','#d9a53a,#d9c23a'],['tcard','Transport karta','#2f8ff6,#2fd4c8'],
+    ['window','Oyna tonirovkasi','#5a6a8a,#8a97b5'],['career','Karyera ma\'lumotlari','#3a6ad9,#3ab6d9'],
+    ['income','Daromadni hisoblash','#1f9d6b,#6ad93a'],['credit','Kredit tarixi','#5a5fd4,#8a5ad4']
+  ];
+  const spheres=[
+    ['health',"Sog'liqni saqlash","#d64a6a",["Kasallik varaqasi haqida ma'lumot","Tibbiy xodimlarga malaka toifasi"]],
+    ['briefcase',"Bandlik va mehnat","#d99a3a",["Ishsizlik nafaqasi","Ishga kerakli hujjatlar"]],
+    ['grad',"Ta'lim","#8a6ad4",["Abituriyentni onlayn ro'yxatga olish","Chet tili darajasini aniqlash"]],
+    ['social',"Ijtimoiy himoya","#2f9f8f",["Bolalar nafaqasi va moddiy yordam","Nogironlar uchun yo'llanmalar"]],
+    ['scale',"Adliya","#3a7ad9",["Tug'ilganlik guvohnomasi","Nikohdan o'tkazish"]],
+    ['leaf',"Ekologiya","#4aab5a",["Ozon buzuvchi moddalar import/eksporti","Ekologik auditor guvohnomasi"]],
+    ['subsidy',"Subsidiya","#6a6ad4",["Talabalar transport xarajati subsidiyasi","Ipoteka uchun subsidiya"]],
+    ['family',"Oila va bolalar","#d64a9d",["Bolani bog'chaga joylashtirish","Bog'cha to'lovi ma'lumoti"]],
+    ['building',"Ko'chmas mulk","#3a9ad9",["Yer uchastkasiga egalik huquqi","Ko'chmas mulkni ro'yxatga olish"]],
+    ['passport',"Fuqarolik","#2f8f6b",["ID-karta uchun ariza berish","Fuqarolikni rasmiylashtirish"]],
+    ['inquiry',"So'rovlar","#d9a53a",["Vafot guvohnomasi","Ma'lumotnoma so'rash"]],
+    ['assets',"Davlat aktivlari","#5a8a4a",["Nodavlat mulkni xususiylashtirish","Davlat mulki ijarasi"]]
+  ];
+  V.innerHTML=`
+  <section class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="sub">Isfandiyorov Akmal,</div>
+        <h1>Xush kelibsiz!</h1>
+      </div>
+      <div class="weather">
+        <div class="wrow"><span class="wpill">Toshkent sh.</span><span class="wpill">PM3 — PM8</span></div>
+        <div class="temps"><span class="sun">${ic('sun')}</span><span>↑21° <small>↓19°</small></span></div>
+      </div>
+    </div>
+    <div class="search">${ic('search')}<input placeholder="Matn kiriting, masalan — Kadastr ma'lumotlari"></div>
+  </section>
+
+  <div class="strip">
+    ${strip.map(s=>`<div class="scard" ${s[4]?`onclick="go('${s[4]}')"`:''}>
+      <div class="thumb" style="background:linear-gradient(140deg,${s[2]})">
+        ${s[3]?`<span class="nb">${s[3]}</span>`:''}
+        <span class="wm">${ic(s[0])}</span>
+        <span class="fg">${ic(s[0])}</span>
+      </div>
+      <div class="lbl">${s[1]}</div></div>`).join('')}
+  </div>
+
+  <div class="promo">
+    <div class="pi">${ic('folder')}</div>
+    <div class="pt">
+      <div class="alertdot">● Monitoring: 1 ta yangi hujjat aniqlandi</div>
+      <h3>Mening hujjatlarim</h3>
+      <p>Barcha reyestrlardagi hujjat va shartnomalaringiz bir ekranda. AI yordamchi har bir hujjatni tushuntiradi, o'zgarishlar haqida ogohlantiradi va yuridik himoya choralarini taklif etadi.</p>
+    </div>
+    <button class="btn btn-pri" onclick="go('documents')">Ochish ${ic('chev')}</button>
+  </div>
+
+  <div class="rate">
+    <div class="pin"><svg width="50" height="50" viewBox="0 0 48 48" fill="none"><path d="M24 4C15 4 8 11 8 20c0 11 16 24 16 24s16-13 16-24C40 11 33 4 24 4z" fill="#2fb37a"/><path d="M16 20l6 6 11-11" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="rt"><h3>Xizmatni baholang!</h3><p>Fikringiz biz uchun muhim</p></div>
+    <div class="receipt">
+      <div class="r1"><span>№ 319984827</span><span>13:40 04.08.2026</span></div>
+      <div class="r2">Kredit tarixini olish</div>
+      <div class="r3"><span class="badge-s b-good">Qayta ishlangan</span><span class="stars">★★★★★</span></div>
+    </div>
+  </div>
+
+  <div class="sec-h"><h2>Sohalar</h2><a href="#documents">Barcha xizmatlar ${ic('chev')}</a></div>
+  <div class="grid4">
+    ${spheres.map(s=>`<div class="sph">
+      <h4>${s[1]}</h4>
+      <ul>${s[3].map(x=>`<li>${x}</li>`).join('')}</ul>
+      <span class="all">${ic('chev')} Barchasi</span>
+      <span class="sico" style="color:${s[2]}">${ic(s[0])}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+/* ---------- documents ---------- */
+function renderDocs(){
+  document.getElementById('foot').innerHTML=foot();
+  const sources=[['all','Barchasi'],['reg','Notarial reyestr'],['shield','IIV'],['car','YHXBB'],['biz','Soliq'],['card','Bank']];
+  let list=DOCS.filter(d=>{
+    if(filter==='all')return true;
+    if(filter==='reg')return d.src.includes('notarial');
+    if(filter==='shield')return d.src.includes('IIV');
+    if(filter==='car')return d.src.includes('YHXBB');
+    if(filter==='biz')return d.src.includes('Soliq');
+    if(filter==='card')return d.src.includes('Bank');
+    return true;});
+  V.innerHTML=`
+  <div class="page-h"><h1>Mening hujjatlarim</h1>
+    <p>Turli davlat reyestrlari va platformalaridan to'plangan hujjatlaringiz — versiyalar tarixi bilan birga.</p></div>
+  <div class="monitor"><div class="mi">${ic('bell')}</div>
+    <div class="mt"><b>Monitoring: 1 ta yangi hodisa</b>
+      <span>Sizning nomingizdagi ko'chmas mulk bo'yicha yangi oldi-sotdi shartnomasi ro'yxatga olindi (21.11.2026).</span></div>
+    <button class="btn btn-pri" onclick="go('detail','uy-sotuv')">Ko'rib chiqish</button></div>
+  <div class="filters">${sources.map(s=>`<button class="chip ${filter===s[0]?'on':''}" onclick="filter='${s[0]}';renderDocs()">${s[1]}</button>`).join('')}</div>
+  <div class="doclist">
+    ${list.map(d=>`<button class="doc" onclick="go('detail','${d.id}')">
+      <div class="dic">${ic(d.icon)}</div>
+      <div class="dmain"><div class="dtitle">${d.title}${d.isNew?'<span class="badge-s b-new">YANGI</span>':''}</div>
+        <div class="dmeta"><span class="src">${ic(d.srcIc)} ${d.src}</span><span>${d.date}</span><span class="vcount">${ic('layers')} ${d.vers} versiya</span></div></div>
+      <div class="dright"><span class="badge-s ${d.status[1]}">${d.status[0]}</span><span class="chev">${ic('chev')}</span></div>
+    </button>`).join('')}</div>`;
+}
+
+/* ---------- detail ---------- */
+function renderDetail(){
+  const d=DOCS.find(x=>x.id===curDoc)||DOCS[0];
+  document.getElementById('foot').innerHTML=foot();
+  V.innerHTML=`
+  <button class="back" onclick="go('documents')">${ic('back')} Mening hujjatlarim</button>
+  <div class="detail">
+    <div class="dcol">
+      <div class="dhead"><div class="row"><div class="bigic">${ic(d.icon)}</div>
+        <div style="min-width:0"><h1>${d.title}</h1><div class="sub">${d.src} • ${d.num}</div>
+          <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">
+            <span class="badge-s ${d.status[1]}">${d.status[0]}</span>${d.isNew?'<span class="badge-s b-new">Yangi hodisa</span>':''}</div></div></div>
+        <div class="kv">${d.kv.map(k=>`<div><span>${k[0]}</span><b>${k[1]}</b></div>`).join('')}</div></div>
+      <div class="card"><div class="ch">${ic('bolt')}<h3>AI xulosa</h3><span class="tagai">AI • lex.uz RAG</span></div>
+        <div class="ai-sum">${d.summary.map(s=>`<p>${s}</p>`).join('')}
+          ${d.flag?`<div class="flag"><span class="fi">${ic('warn')}</span><div>${d.flag}</div></div>`:''}</div></div>
+      <div class="card"><div class="ch">${ic('layers')}<h3>Versiyalar tarixi</h3></div>
+        <div class="tl">${d.tl.map(e=>`<div class="ev ${e.cls}"><span class="dot"></span><div class="ec"><b>${e.t}</b><span class="dt">${e.d}</span><p>${e.p}</p></div></div>`).join('')}</div></div>
+      <div class="card actbar"><h3>Yuridik himoya</h3>
+        <div class="note">Hujjat bo'yicha tezkor choralar. Shubhali bitimni egasi tasdiqlagunicha pauzaga olish mumkin.</div>
+        <div class="acts">
+          <button class="act danger" onclick="act('E\\'tiroz arizasi shakllantirildi')"><span class="ai2">${ic('gavel')}</span><div>E'tiroz bildirish<small>Notariusga / IIV ga</small></div></button>
+          <button class="act warnc" onclick="act('Bitim bloklandi — pauzaga olindi')"><span class="ai2">${ic('block')}</span><div>Bloklash<small>Bitimni to'xtatib turish</small></div></button>
+          <button class="act danger" onclick="act('Bekor qilish arizasi yuborildi')"><span class="ai2">${ic('x')}</span><div>Bekor qilish<small>Hujjatni rad etish</small></div></button>
+          <button class="act infoc" onclick="act('Ariza qabul qilindi')"><span class="ai2">${ic('file2')}</span><div>Ariza topshirish<small>Rasmiy murojaat</small></div></button>
+          <button class="act okc" onclick="act('Harakat tasdiqlandi')"><span class="ai2">${ic('check2')}</span><div>Tasdiqlash<small>Men amalga oshirdim</small></div></button>
+          <button class="act infoc" onclick="act('Yuridik maslahat so\\'raldi')"><span class="ai2">${ic('info')}</span><div>Maslahat<small>Yurist bilan bog'lanish</small></div></button>
+        </div></div>
+    </div>
+    <div class="chat">
+      <div class="chat-h"><div class="ca">${ic('bolt')}</div>
+        <div><h3>AI yordamchi</h3><small>Ushbu hujjat bo'yicha</small></div>
+        <span class="lv">${ic('shield')} lex.uz</span></div>
+      <div class="chat-body" id="cbody"></div>
+      <div class="sugs" id="csugs"></div>
+      <form class="chat-in" id="cform"><input id="cinput" placeholder="Hujjat haqida savol bering..." autocomplete="off"><button type="submit" aria-label="Yuborish">${ic('send')}</button></form>
+    </div>
+  </div>`;
+  initChat(d);
+}
+
+/* ---------- chat ---------- */
+function initChat(d){
+  const body=document.getElementById('cbody');
+  pushBot(body,d.isNew?"Assalomu alaykum. Men bu hujjatni tahlil qildim. Bu — siz boshlamagan bo'lishi mumkin bo'lgan bitim. Savollaringizga lex.uz qonunchilik bazasi asosida javob beraman.":"Assalomu alaykum. Men ushbu hujjat bo'yicha savollaringizga lex.uz bazasi asosida javob beraman.",null,true);
+  document.getElementById('csugs').innerHTML=d.qa.map((x,i)=>`<button class="sug" onclick="askIdx('${d.id}',${i})">${x.q}</button>`).join('');
+  document.getElementById('cform').onsubmit=e=>{e.preventDefault();const inp=document.getElementById('cinput');const t=inp.value.trim();if(!t)return;inp.value='';ask(d,t);};
+}
+function askIdx(id,i){const d=DOCS.find(x=>x.id===id);ask(d,d.qa[i].q,i);}
+function ask(d,text,idx){
+  const body=document.getElementById('cbody');pushMe(body,text);
+  let hit=idx!=null?d.qa[idx]:matchQA(d,text);const typing=pushTyping(body);
+  setTimeout(()=>{typing.remove();
+    if(hit)pushBot(body,hit.a,hit.c);
+    else pushBot(body,"Bu savol bo'yicha aniq ma'lumot topa olmadim. Hujjatning asosiy tafsilotlari va «Yuridik himoya» bo'limidagi choralardan foydalanishingiz mumkin.","lex.uz • qidiruv natijasi");
+    body.scrollTop=body.scrollHeight;},850);
+}
+function matchQA(d,text){const t=text.toLowerCase();let best=null,score=0;
+  d.qa.forEach(x=>{const w=x.q.toLowerCase().replace(/[?'.,]/g,'').split(/\s+/);let s=0;w.forEach(k=>{if(k.length>3&&t.includes(k))s++;});if(s>score){score=s;best=x;}});
+  return score>0?best:null;}
+function pushBot(b,txt,cite,noscroll){const el=document.createElement('div');el.className='msg bot';
+  el.innerHTML=txt+(cite?`<span class="cite">📎 ${cite}</span>`:'');b.appendChild(el);if(!noscroll)b.scrollTop=b.scrollHeight;}
+function pushMe(b,txt){const el=document.createElement('div');el.className='msg me';el.textContent=txt;b.appendChild(el);b.scrollTop=b.scrollHeight;}
+function pushTyping(b){const el=document.createElement('div');el.className='msg bot';el.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';b.appendChild(el);b.scrollTop=b.scrollHeight;return el;}
+
+function act(msg){const t=document.getElementById('toast');t.innerHTML=`${ic('check2')} ${msg}`;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2600);}
+function foot(){return "Bu — <b>prototip</b> (demo). Haqiqiy davlat portali emas. Ma'lumotlar namoyish uchun to'qima. Loyiha: hujjatlar agregatsiyasi, monitoring va yuridik himoya — lex.uz RAG asosidagi AI yordamchi bilan.";}
+
+document.querySelectorAll('[data-ic]').forEach(e=>{e.innerHTML=ic(e.dataset.ic);});
+document.querySelectorAll('.rail a').forEach(a=>a.addEventListener('click',closeNav));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeNav();});
+route();
+</script>
+
+</body>
+</html>
