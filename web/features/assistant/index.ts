@@ -1,0 +1,1 @@
+export { DocumentAssistant } from "./DocumentAssistant";

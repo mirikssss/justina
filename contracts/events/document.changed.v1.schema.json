@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "document.changed.v1.schema.json",
+  "title": "document.changed",
+  "description": "Новая версия документа (другой хеш), кроме смены статуса",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "document.changed"
+    },
+    "schema": {
+      "const": "document.changed/v1"
+    },
+    "producer": {
+      "const": "documents"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_id",
+        "version_no",
+        "prev_version_no",
+        "changed_fields"
+      ],
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "version_no": {
+          "type": "integer"
+        },
+        "prev_version_no": {
+          "type": "integer"
+        },
+        "changed_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

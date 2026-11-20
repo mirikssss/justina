@@ -5,7 +5,7 @@ import sys
 import time
 from pathlib import Path
 
-from app.modules.retrieval.service import search
+from storozh.assistant.rag.retrieval.service import search
 
 
 def main(rerank: bool = True, k: int = 5) -> None:

@@ -1,0 +1,8 @@
+"""Адаптеры источников. Новый реестр: папка adapters/<source>/ + строка в ADAPTERS."""
+
+from storozh.documents.adapters.mygov_car_poa.adapter import MyGovCarPoaAdapter
+from storozh.documents.adapters.mygov_notarial.adapter import MyGovNotarialAdapter
+from storozh.documents.adapters.vakolat.adapter import VakolatAdapter
+from storozh.documents.ports import SourceAdapter
+
+ADAPTERS: list[SourceAdapter] = [MyGovCarPoaAdapter(), MyGovNotarialAdapter(), VakolatAdapter()]

@@ -1,19 +1,72 @@
+# docker compose up            — всё: база, миграции, API, воркеры, бот, веб
+# docker compose up db migrate — только база (для локальной разработки с uv run / npm run dev)
+# docker compose --profile mock up mock — Prism-мок по contracts/openapi.yaml на :4010
+x-backend: &backend
+  build: {context: ., dockerfile: backend/Dockerfile, target: base}
+  env_file: [.env]
+  environment:
+    DATABASE_URL: postgresql://storozh:storozh@db:5432/storozh
+  depends_on:
+    migrate: {condition: service_completed_successfully}
+  restart: unless-stopped
+
 services:
   db:
-    image: pgvector/pgvector:0.8.7-pg17
+    image: pgvector/pgvector:0.8.0-pg16
     environment:
-      POSTGRES_USER: justina
-      POSTGRES_PASSWORD: justina
-      POSTGRES_DB: justina
-    ports:
-      - "5433:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./backend/migrations:/docker-entrypoint-initdb.d:ro,z
+      POSTGRES_USER: storozh
+      POSTGRES_PASSWORD: storozh
+      POSTGRES_DB: storozh
+    ports: ["5433:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U justina"]
+      test: ["CMD-SHELL", "pg_isready -U storozh"]
       interval: 3s
       retries: 20
+
+  migrate:
+    <<: *backend
+    command: ["python", "-m", "storozh", "migrate"]
+    depends_on: {db: {condition: service_healthy}}
+    restart: "no"
+
+  api:
+    <<: *backend
+    command: ["python", "-m", "storozh", "api"]
+    ports: ["8000:8000"]
+
+  collector:      # Разработчик 1
+    <<: *backend
+    build: {context: ., dockerfile: backend/Dockerfile, target: browser}
+    command: ["python", "-m", "storozh", "worker", "collector"]
+
+  guard-worker:   # Разработчик 2
+    <<: *backend
+    build: {context: ., dockerfile: backend/Dockerfile, target: browser}
+    command: ["python", "-m", "storozh", "worker", "guard"]
+
+  bot:            # Разработчик 2
+    <<: *backend
+    command: ["python", "-m", "storozh", "worker", "bot"]
+
+  assist-worker:  # Разработчик 3
+    <<: *backend
+    command: ["python", "-m", "storozh", "worker", "assistant"]
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args: {NEXT_PUBLIC_API_URL: "http://localhost:8000"}
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+  mock:
+    profiles: [mock]
+    image: stoplight/prism:5
+    command: ["mock", "-h", "0.0.0.0", "-d", "/contracts/openapi.yaml"]
+    volumes: [./contracts:/contracts:ro]
+    ports: ["4010:4010"]
 
 volumes:
   pgdata:
