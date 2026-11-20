@@ -1,0 +1,8 @@
+# Блок для Caddyfile, если на сервере Caddy (сертификат выпустит сам)
+justina.clusteros.co.uz {
+    @internal path /api/internal/*
+    respond @internal 404
+    reverse_proxy 127.0.0.1:8180 {
+        flush_interval -1
+    }
+}
