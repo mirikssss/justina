@@ -1,0 +1,19 @@
+services:
+  db:
+    image: pgvector/pgvector:0.8.7-pg17
+    environment:
+      POSTGRES_USER: justina
+      POSTGRES_PASSWORD: justina
+      POSTGRES_DB: justina
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro,z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U justina"]
+      interval: 3s
+      retries: 20
+
+volumes:
+  pgdata:
