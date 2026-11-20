@@ -1,1 +1,1 @@
-export { DocumentAssistant } from "./DocumentAssistant";
+export { AssistantChat, AssistantSummary, DocumentAssistant } from "./DocumentAssistant";

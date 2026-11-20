@@ -58,7 +58,7 @@ services:
     build:
       context: ..
       dockerfile: web/Dockerfile
-      args: {NEXT_PUBLIC_API_URL: "http://localhost:8000"}
+      args: {API_PROXY_URL: "http://api:8000"}  # браузер ходит в /api, Next проксирует на API
     ports: ["3000:3000"]
     depends_on: [api]
 

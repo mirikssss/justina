@@ -9,6 +9,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, Request
 
+from storozh.shared import crypto
 from storozh.shared.config import settings
 
 DEV_CITIZEN_ID = UUID("00000000-0000-0000-0000-000000000001")
@@ -28,7 +29,14 @@ async def current_citizen(request: Request) -> Citizen:
 
 
 async def internal_request(request: Request) -> None:
-    """Внутренние эндпоинты: HMAC X-Signature + X-Timestamp (окно 5 минут)."""
-    # TODO(Разработчик 2): проверка подписи через crypto.verify_signature
-    if settings.env != "dev":
-        raise HTTPException(status_code=401, detail="bad signature")
+    """Внутренние эндпоинты: HMAC X-Signature + X-Timestamp (окно 5 минут).
+
+    В dev без INGEST_HMAC_KEY подпись не проверяется. Защита от повтора — идемпотентность по snapshot_id.
+    """
+    if settings.env == "dev" and not settings.ingest_hmac_key:
+        return
+    try:
+        ts = int(request.headers["x-timestamp"])
+        crypto.verify_internal(await request.body(), ts, request.headers["x-signature"])
+    except (KeyError, ValueError, crypto.BadSignature) as e:
+        raise HTTPException(status_code=401, detail="bad signature") from e

@@ -68,7 +68,7 @@ make check                                # ruff + import-linter + pytest
 
 ```bash
 make web                                  # http://localhost:3000
-make mock                                 # Prism-мок :4010; в web/.env.local NEXT_PUBLIC_API_URL=http://localhost:4010
+make mock                                 # Prism-мок :4010; затем API_PROXY_URL=http://localhost:4010 make web
 ```
 
 После правки `contracts/openapi.yaml` запустите `make gen-api` и закоммитьте `web/lib/api/schema.d.ts`.
@@ -97,7 +97,9 @@ make mock                                 # Prism-мок :4010; в web/.env.loca
   из psycopg: так уже написан RAG, и роли БД ставятся на соединение. Остальные сигнатуры совпадают.
 - **Обработчик outbox получает `(event, conn)`, а не `(event)`.** Его записи в базу коммитятся вместе
   со сдвигом курсора, поэтому повтор события не даёт двойных записей.
-- **`documents` уникальны по `(citizen_id, uri)`, а не по `uri`.** Одну e-доверенность видят обе стороны.
+- **`documents` уникальны по `(citizen_id, uri)`, а не по `uri`**, и `dedupe_key` событий `document.*` начинается
+  с `{citizen_id}:`. Одну e-доверенность видят обе стороны; с ключом из ТЗ (`{uri}:1:created`) событие второй
+  стороны отбрасывалось бы как дубль.
 - **`guard.alerts` уникальны по `(event_id, rule_id)`.** Это совпадает с `dedupe_key` события `alert.created`.
 - **SQL-миграции вместо Alembic:** у пяти независимых владельцев схем Alembic даёт ветки с merge-головами.
 - **Компоненты фронта лежат в `web/features/<context>/`, а не в `app/(guard)/components/`.** Маршруты лежат

@@ -6,25 +6,10 @@ import psycopg
 import pytest
 
 from storozh.shared import db, outbox
-from storozh.shared.config import settings
 from storozh.shared.events import Event
+from tests.integration.conftest import requires_db
 
-
-def _db_available() -> bool:
-    try:
-        with psycopg.connect(settings.database_url, connect_timeout=2) as c:
-            return c.execute("SELECT to_regclass('shared.outbox')").fetchone()[0] is not None
-    except psycopg.OperationalError:
-        return False
-
-
-pytestmark = pytest.mark.skipif(not _db_available(), reason="нет базы с миграциями")
-
-
-@pytest.fixture(autouse=True)
-async def _close_pools():
-    yield
-    await db.close_all()
+pytestmark = requires_db
 
 
 def _publish(conn, citizen: uuid.UUID, key: str):

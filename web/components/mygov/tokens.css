@@ -1,23 +1,69 @@
-/* Дизайн-токены MyGov (Разработчик 3).
-   Стартовые значения взяты из frontend-mockup/; заменить на снятые в DevTools с настоящего my.gov.uz:
-   цвета, шрифт, радиусы, отступы, тени, сетка. Компоненты и Tailwind читают только эти переменные. */
+/* Дизайн-токены MyGov (Разработчик 3). Сняты с живого my.gov.uz (CSS-переменные портала + замер в браузере):
+   фон #f2f4f7, основной #0068e0, меню #0068e0 / разделитель #4196f8, серый текст #64748b, Montserrat, радиус 14px.
+   Имена слева — наши; в комментариях — переменная портала. Правка цвета — только здесь. */
 :root {
-  --bg: #f2f4f8;
-  --surface: #ffffff;
-  --surface-2: #eef1f6;
-  --border: #dde3ec;
-  --fg: #101826;
-  --muted: #5c6880;
-  --accent: #2f6df6;
-  --good: #1f9d57;
-  --good-bg: #e4f5ec;
-  --warn: #c8821a;
-  --warn-bg: #fbf0dd;
-  --crit: #d8453b;
-  --crit-bg: #fbe6e4;
-  --info-bg: #e7f0ff;
-  --radius-card: 12px;
-  --radius-ctl: 8px;
-  --shadow: 0 1px 3px rgba(16, 24, 38, 0.06), 0 8px 24px rgba(16, 24, 38, 0.05);
-  --ff: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bg: #f2f4f7;                 /* --bg */
+  --surface: #ffffff;            /* --element-bg */
+  --card: #ffffff;
+  --surface-2: #f8fafc;          /* --light-grey-input */
+  --border: #e5e7eb;             /* --ui-border (gray-200) */
+  --border-soft: #eef1f5;
+  --fg: #000000;                 /* --font-color */
+  --fg-2: #202020;               /* --secondary-font-color */
+  --muted: #64748b;              /* --grey-text */
+  --faint: #94a3b8;
+  --blue: #0068e0;               /* --color-primary */
+  --accent: #0068e0;
+  --blue-hover: #0153b2;         /* --blue-btn-hover */
+  --light-primary: #e2ecf7;      /* --color-light-primary */
+  --info-bg: #eaf4ff;            /* --table-tr-blue */
+  --teal: #00b0a5;               /* конец градиента баннера */
+  --menu: #0068e0;               /* --main-menu */
+  --menu-secondary: #0050ac;     /* --menu-secondary */
+  --menu-active: #0057bb;        /* --menu-active */
+  --menu-divider: #4196f8;       /* --menu-divider */
+  --hero: linear-gradient(65.97deg, #0068e0 33.59%, #00dc82 122.33%);
+  --btn-gradient: linear-gradient(100deg, #1a7bf0, #0068e0);
+  --btn-shadow: 0 4.7px 16.2px rgba(0, 104, 224, 0.4);
+  --good: #12855a;               /* --cm-green */
+  --good-bg: #e7f6ef;            /* --cm-green-bg */
+  --warn: #b7791f;
+  --warn-bg: #fceabd;            /* --light-yellow */
+  --crit: #c62828;               /* --cm-red */
+  --crit-bg: #fdecec;            /* --cm-red-bg */
+  --shadow: 0 6px 14px #16213a14;
+  --radius-card: 14px;           /* --radius */
+  --radius-ctl: 12px;
+  --ff: Montserrat, "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  color-scheme: light;
+}
+
+/* Тёмная тема портала (html.dark) */
+:root.dark, :root[data-theme="dark"] {
+  --bg: #232323;
+  --surface: #404040;
+  --card: #2d2d2d;
+  --surface-2: #515151;
+  --border: #404040;
+  --border-soft: #383838;
+  --fg: #ffffff;
+  --fg-2: #fdf9f3;
+  --muted: #d7d7d7;
+  --faint: #9a9a9a;
+  --blue: #cbddf1;
+  --accent: #cbddf1;
+  --blue-hover: #404040;
+  --light-primary: #404040;
+  --info-bg: #404040;
+  --menu: #2d2d2d;
+  --menu-secondary: #404040;
+  --menu-active: #333333;
+  --menu-divider: #232323;
+  --good: #7cc79c;
+  --good-bg: rgba(124, 199, 156, 0.12);
+  --warn: #e0a94a;
+  --warn-bg: #6e6752;
+  --crit: #e88b85;
+  --crit-bg: rgba(232, 139, 133, 0.12);
+  color-scheme: dark;
 }

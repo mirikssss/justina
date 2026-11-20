@@ -6,6 +6,7 @@ from storozh.shared.contracts import NormalizedDocument
 
 class VakolatAdapter:
     source_id = "vakolat.check"
+    title = "Vakolat.uz · проверка доверенностей"
     poll_interval_s = 300
     complete = False
 

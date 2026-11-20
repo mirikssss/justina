@@ -26,6 +26,7 @@ class BrowserSession:
 
 class SourceAdapter(Protocol):
     source_id: str  # "mygov.car_poa"
+    title: str  # для страницы «Источники»
     poll_interval_s: int
     complete: bool  # отдаёт ли fetch весь список (тогда пропажа записи — событие)
 
