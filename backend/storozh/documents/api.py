@@ -3,9 +3,9 @@
 import json
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
-from storozh.documents import checks, service
+from storozh.documents import checks, features, service
 from storozh.shared.auth import Citizen, current_citizen, internal_request
 from storozh.shared.contracts import SourceSnapshot
 
@@ -24,6 +24,12 @@ async def list_documents(kind: str | None = None, status: str | None = None, q: 
         return await service.list_documents(citizen.id, kind=kind, status=status, q=q, cursor=cursor)
     except ValueError as e:
         raise HTTPException(status_code=400, detail="bad cursor") from e
+
+
+@router.get("/documents/overview")
+async def documents_overview(citizen: Citizen = Depends(current_citizen)):
+    """Сводка: сколько документов, что истекает, что требует внимания, свежие изменения, здоровье источников."""
+    return await features.overview(citizen.id)
 
 
 @router.get("/documents/{document_id}")
@@ -102,3 +108,48 @@ async def get_check(check_id: UUID, citizen: Citizen = Depends(current_citizen))
 async def analytics_documents(citizen: Citizen = Depends(current_citizen)):
     """Панель рисков: обезличенные агрегаты по документам (без личных данных)."""
     return await checks.document_stats()
+
+
+# --- Поделиться документом (24 часа, журнал просмотров) и доказательный пакет ---
+
+
+@router.post("/documents/{document_id}/share")
+async def share_document(document_id: UUID, citizen: Citizen = Depends(current_citizen)):
+    try:
+        return await features.create_share(citizen.id, document_id)
+    except service.NotFound as e:
+        raise _not_found(e) from e
+
+
+@router.get("/documents/{document_id}/shares")
+async def document_shares(document_id: UUID, citizen: Citizen = Depends(current_citizen)):
+    return await features.list_shares(citizen.id, document_id)
+
+
+@router.delete("/shares/{share_id}", status_code=204)
+async def revoke_share(share_id: UUID, citizen: Citizen = Depends(current_citizen)):
+    if not await features.revoke_share(citizen.id, share_id):
+        raise HTTPException(status_code=404, detail="share not found")
+
+
+public = APIRouter(tags=["documents"])
+
+
+@public.get("/public/shared/{token}")
+async def shared_document(token: str):
+    """Публично, без входа: замаскированный документ по временной ссылке. Каждый просмотр пишется в журнал."""
+    found = await features.open_share(token) if 16 <= len(token) <= 64 else None
+    if found is None:
+        raise HTTPException(status_code=404, detail="link expired or not found")
+    return found
+
+
+@router.get("/documents/{document_id}/evidence.pdf")
+async def document_evidence(document_id: UUID, citizen: Citizen = Depends(current_citizen)):
+    """Доказательный пакет: все версии, хеши и что менялось — PDF для банка, нотариуса, суда."""
+    try:
+        pdf = await features.evidence_pdf(citizen.id, document_id)
+    except service.NotFound as e:
+        raise _not_found(e) from e
+    return Response(pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="evidence-{document_id}.pdf"'})

@@ -9,6 +9,7 @@ import { DocumentGuard } from "@/features/guard";
 import { useT } from "@/lib/i18n";
 
 import { FIELD, KIND, ROLE, SOURCE, STATUS, fmtDate, fmtDateTime } from "./labels";
+import { DocumentTools } from "./DocumentTools";
 import { useDiff, useDocument, useDocumentsLive, useVersions } from "./queries";
 
 // FR-D-15: реквизиты, стороны, объект, статус, история версий.
@@ -60,6 +61,7 @@ export function DocumentPage({ id }: { id: string }) {
           </div>
 
           <AssistantSummary documentId={id} />
+          <DocumentTools id={id} />
           <Versions id={id} />
           <DocumentGuard documentId={id} status={d.status} />
         </div>

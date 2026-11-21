@@ -11,6 +11,27 @@ export const LOCALE_SHORT: Record<Locale, string> = { uz: "O‘z", ru: "Рус" 
 // uz → ru. Ключи — ровно те узбекские строки, что стоят в коде.
 export const RU: Record<string, string> = {
   // --- Каркас / Shell ---
+  // --- Сводка, поделиться, доказательный пакет ---
+  "Umumiy ko'rinish": "Сводка",
+  "Sizning barcha hujjatlaringiz, muddatlar va e'tibor talab qiladigan narsalar": "Все ваши документы, сроки и то, что требует внимания",
+  "Raqamlarda": "В цифрах",
+  "7 kunda yangi": "новых за 7 дней",
+  "manba ishlayapti": "источников работает",
+  "E'tibor talab qiladi": "Требует внимания",
+  "Diqqat": "Внимание",
+  "Hozircha hammasi joyida": "Пока всё в порядке",
+  "Tez orada tugaydi": "Скоро истекает",
+  "90 kun ichida tugaydigan hujjat yo'q": "Документов, истекающих в ближайшие 90 дней, нет",
+  "So'nggi o'zgarishlar": "Последние изменения",
+  "Hali o'zgarishlar yo'q": "Изменений пока нет",
+  "Hujjat bilan ishlash": "Работа с документом",
+  "Ulashish (24 soat)": "Поделиться (24 часа)",
+  "Dalil paketi (PDF)": "Доказательный пакет (PDF)",
+  "Havola maskalangan hujjatni ko'rsatadi, kirish talab qilinmaydi": "Ссылка показывает документ с масками, вход не нужен",
+  "Ko'rishlar jurnali": "Журнал просмотров",
+  "ko'rish": "просм.",
+  "Tugagan": "Истекла",
+
   // --- Проверка перед сделкой, кабинет нотариуса, панель рисков ---
   "Bitimdan oldin tekshirish": "Проверка перед сделкой",
   "Notarius kabineti": "Кабинет нотариуса",

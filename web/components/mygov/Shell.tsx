@@ -14,6 +14,7 @@ import { Icon, type IconName } from "./Icon";
 // До 1500px меню сворачивается в иконки, до 992px — выезжает по кнопке (те же брейкпоинты, что у портала).
 // Герб и логотип MyGov не копируем (FR-G-15): на их месте — название модуля и плашка «Prototip».
 const NAV: { href: string; label: string; icon: IconName }[] = [
+  { href: "/", label: "Umumiy ko'rinish", icon: "grid" },
   { href: "/documents", label: "Mening hujjatlarim", icon: "folder" },
   { href: "/alerts", label: "Bildirishnomalar", icon: "bell" },
   { href: "/sources", label: "Manbalar", icon: "layers" },
@@ -102,7 +103,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="navsec">{t("Hujjatlar")} <Icon name="cdown" size={16} /></div>
           <nav className="nav">
             {NAV.map((n) => (
-              <Link key={n.href} href={n.href} className={path?.startsWith(n.href) ? "on" : ""} title={t(n.label)}>
+              <Link key={n.href} href={n.href} className={(n.href === "/" ? path === "/" : path?.startsWith(n.href)) ? "on" : ""} title={t(n.label)}>
                 <span className="ic"><Icon name={n.icon} size={21} /></span>
                 <span className="lbl">{t(n.label)}</span>
               </Link>

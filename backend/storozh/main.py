@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from storozh.assistant.api import router as assistant_router
 from storozh.documents.api import internal as documents_internal
+from storozh.documents.api import public as documents_public
 from storozh.documents.api import router as documents_router
 from storozh.guard.api import analytics_router
 from storozh.guard.api import router as guard_router
@@ -31,7 +32,7 @@ def create_app() -> FastAPI:
     problem.install(app)
     ratelimit.install(app)
     auth.set_session_resolver(platform_public.session_citizen)
-    for r in (platform_router, documents_router, documents_internal, guard_router, analytics_router, assistant_router):
+    for r in (platform_router, documents_router, documents_internal, documents_public, guard_router, analytics_router, assistant_router):
         app.include_router(r)
 
     @app.get("/healthz", include_in_schema=False)

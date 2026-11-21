@@ -687,6 +687,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Сводка — документы, сроки, что требует внимания, свежие изменения, здоровье источников */
+        get: operations["documentsOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/{document_id}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ссылка на замаскированный документ на 24 часа без входа */
+        post: operations["shareDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/{document_id}/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Выданные ссылки и журнал просмотров */
+        get: operations["documentShares"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shares/{share_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Отозвать ссылку досрочно */
+        delete: operations["revokeShare"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/shared/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Публичный просмотр замаскированного документа по временной ссылке (без входа) */
+        get: operations["sharedDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/{document_id}/evidence.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Доказательный пакет — все версии, хеши и что менялось (PDF) */
+        get: operations["documentEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -990,6 +1092,65 @@ export interface components {
                 count: number;
             }[];
             generated_at: string;
+        };
+        Overview: {
+            total: number;
+            by_kind: {
+                kind: string;
+                count: number;
+            }[];
+            new_7d: number;
+            expiring: {
+                id: string;
+                title: string;
+                kind: string;
+                valid_until: string;
+                days_left: number;
+            }[];
+            attention: {
+                /** @enum {unknown} */
+                level: "high" | "medium" | "info";
+                type: string;
+                text: string;
+                text_uz: string;
+                title?: string;
+                document_id?: string;
+                days_left?: number;
+            }[];
+            recent_changes: {
+                id: string;
+                title: string;
+                kind: string;
+                status: string;
+                version: number;
+                updated_at: string;
+            }[];
+            sources: {
+                [key: string]: number;
+            };
+        };
+        ShareLink: {
+            /** Format: uuid */
+            share_id: string;
+            url: string;
+            expires_at: string;
+        };
+        ShareInfo: {
+            /** Format: uuid */
+            share_id: string;
+            created_at: string;
+            expires_at: string;
+            active: boolean;
+            views: number;
+            last_view_at: string | null;
+        };
+        SharedDocument: {
+            document: {
+                [key: string]: unknown;
+            };
+            versions_count: number;
+            shared_until: string;
+            note: string;
         };
         /**
          * NormalizedDocument
@@ -2108,6 +2269,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentStats"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    documentsOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Сводка гражданина */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Overview"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    shareDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ссылка */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareLink"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    documentShares: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ссылки */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareInfo"][];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokeShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                share_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ссылка отозвана */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    sharedDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Документ с масками */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedDocument"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    documentEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
                 };
             };
             default: components["responses"]["Problem"];

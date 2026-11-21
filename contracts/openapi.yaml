@@ -679,6 +679,84 @@ paths:
             application/json:
               schema: {$ref: "#/components/schemas/DocumentStats"}
         default: {$ref: "#/components/responses/Problem"}
+  /documents/overview:
+    get:
+      tags: [documents]
+      operationId: documentsOverview
+      summary: Сводка — документы, сроки, что требует внимания, свежие изменения, здоровье источников
+      responses:
+        "200":
+          description: Сводка гражданина
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Overview"}
+        default: {$ref: "#/components/responses/Problem"}
+  /documents/{document_id}/share:
+    post:
+      tags: [documents]
+      operationId: shareDocument
+      summary: Ссылка на замаскированный документ на 24 часа без входа
+      parameters:
+        - {name: document_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        "200":
+          description: Ссылка
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ShareLink"}
+        default: {$ref: "#/components/responses/Problem"}
+  /documents/{document_id}/shares:
+    get:
+      tags: [documents]
+      operationId: documentShares
+      summary: Выданные ссылки и журнал просмотров
+      parameters:
+        - {name: document_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        "200":
+          description: Ссылки
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/ShareInfo"}}
+        default: {$ref: "#/components/responses/Problem"}
+  /shares/{share_id}:
+    delete:
+      tags: [documents]
+      operationId: revokeShare
+      summary: Отозвать ссылку досрочно
+      parameters:
+        - {name: share_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        "204": {description: Ссылка отозвана}
+        default: {$ref: "#/components/responses/Problem"}
+  /public/shared/{token}:
+    get:
+      tags: [documents]
+      operationId: sharedDocument
+      summary: Публичный просмотр замаскированного документа по временной ссылке (без входа)
+      parameters:
+        - {name: token, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Документ с масками
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SharedDocument"}
+        default: {$ref: "#/components/responses/Problem"}
+  /documents/{document_id}/evidence.pdf:
+    get:
+      tags: [documents]
+      operationId: documentEvidence
+      summary: Доказательный пакет — все версии, хеши и что менялось (PDF)
+      parameters:
+        - {name: document_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        default: {$ref: "#/components/responses/Problem"}
 components:
   parameters:
     Cursor: {name: cursor, in: query, schema: {type: string}, description: непрозрачный курсор из next_cursor}
@@ -1014,3 +1092,83 @@ components:
               status: {type: string}
               count: {type: integer}
         generated_at: {type: string}
+
+    Overview:
+      type: object
+      required: [total, by_kind, new_7d, expiring, attention, recent_changes, sources]
+      properties:
+        total: {type: integer}
+        by_kind:
+          type: array
+          items:
+            type: object
+            required: [kind, count]
+            properties: {kind: {type: string}, count: {type: integer}}
+        new_7d: {type: integer}
+        expiring:
+          type: array
+          items:
+            type: object
+            required: [id, title, kind, valid_until, days_left]
+            properties:
+              id: {type: string}
+              title: {type: string}
+              kind: {type: string}
+              valid_until: {type: string}
+              days_left: {type: integer}
+        attention:
+          type: array
+          items:
+            type: object
+            required: [level, type, text, text_uz]
+            properties:
+              level: {enum: [high, medium, info]}
+              type: {type: string}
+              text: {type: string}
+              text_uz: {type: string}
+              title: {type: string}
+              document_id: {type: string}
+              days_left: {type: integer}
+        recent_changes:
+          type: array
+          items:
+            type: object
+            required: [id, title, kind, status, version, updated_at]
+            properties:
+              id: {type: string}
+              title: {type: string}
+              kind: {type: string}
+              status: {type: string}
+              version: {type: integer}
+              updated_at: {type: string}
+        sources:
+          type: object
+          additionalProperties: {type: integer}
+
+    ShareLink:
+      type: object
+      required: [share_id, url, expires_at]
+      properties:
+        share_id: {type: string, format: uuid}
+        url: {type: string}
+        expires_at: {type: string}
+
+    ShareInfo:
+      type: object
+      required: [share_id, created_at, expires_at, active, views, last_view_at]
+      properties:
+        share_id: {type: string, format: uuid}
+        created_at: {type: string}
+        expires_at: {type: string}
+        active: {type: boolean}
+        views: {type: integer}
+        last_view_at: {type: [string, "null"]}
+
+    SharedDocument:
+      type: object
+      required: [document, versions_count, shared_until, note]
+      properties:
+        document: {type: object, additionalProperties: true}
+        versions_count: {type: integer}
+        shared_until: {type: string}
+        note: {type: string}
