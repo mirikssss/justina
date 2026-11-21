@@ -6,27 +6,109 @@
 actions.evidence_enc, drafts.pdf_enc.
 """
 
+import base64
 import hashlib
 import hmac
+import os
+import threading
 import time
 from uuid import UUID
+
+import psycopg
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from storozh.shared.config import settings
 
 INTERNAL_WINDOW_S = 300
+_VERSION = b"\x01"
+_NONCE = 12
 
 
 class BadSignature(Exception):
     pass
 
 
+class CryptoError(Exception):
+    """Нет мастер-ключа, ключ гражданина удалён или данные испорчены."""
+
+
+# --------------------------------------------------------------------------- ключи
+
+
+def _master() -> AESGCM:
+    try:
+        key = base64.b64decode(settings.master_key, validate=True)
+    except ValueError as e:
+        raise CryptoError("MASTER_KEY is not valid base64") from e
+    if len(key) != 32:
+        raise CryptoError("MASTER_KEY must be 32 bytes (base64); see .env.example")
+    return AESGCM(key)
+
+
+def _wrap(citizen_id: UUID, dek: bytes) -> bytes:
+    nonce = os.urandom(_NONCE)
+    return nonce + _master().encrypt(nonce, dek, b"dek:" + citizen_id.bytes)
+
+
+def _unwrap(citizen_id: UUID, dek_enc: bytes) -> bytes:
+    try:
+        return _master().decrypt(dek_enc[:_NONCE], dek_enc[_NONCE:], b"dek:" + citizen_id.bytes)
+    except InvalidTag as e:
+        raise CryptoError("cannot unwrap data key: wrong MASTER_KEY?") from e
+
+
+def _db_get_or_create(citizen_id: UUID, candidate_enc: bytes) -> bytes:
+    """Хранилище DEK — shared.data_keys под ролью storozh_shared. Синхронно: encrypt/decrypt без соединения."""
+    with psycopg.connect(settings.database_url, autocommit=True) as conn:
+        conn.execute("SET ROLE storozh_shared")
+        conn.execute(
+            "INSERT INTO shared.data_keys (citizen_id, dek_enc) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+            (citizen_id, candidate_enc),
+        )
+        row = conn.execute("SELECT dek_enc FROM shared.data_keys WHERE citizen_id = %s", (citizen_id,)).fetchone()
+    return bytes(row[0])
+
+
+_key_store = _db_get_or_create  # тесты подменяют на словарь в памяти
+_cache: dict[UUID, bytes] = {}
+_lock = threading.Lock()
+
+
+def _dek(citizen_id: UUID) -> bytes:
+    with _lock:
+        if citizen_id in _cache:
+            return _cache[citizen_id]
+    dek_enc = _key_store(citizen_id, _wrap(citizen_id, AESGCM.generate_key(bit_length=256)))
+    dek = _unwrap(citizen_id, dek_enc)
+    with _lock:
+        _cache[citizen_id] = dek
+    return dek
+
+
+def forget_cached_keys() -> None:
+    with _lock:
+        _cache.clear()
+
+
+# --------------------------------------------------------------------------- данные
+
+
 def encrypt(citizen_id: UUID, plaintext: bytes) -> bytes:
-    """nonce || ciphertext || tag ключом данных гражданина."""
-    raise NotImplementedError("shared.crypto.encrypt: Разработчик 2")
+    """version(1) || nonce(12) || ciphertext || tag ключом данных гражданина; citizen_id — в AAD."""
+    nonce = os.urandom(_NONCE)
+    return _VERSION + nonce + AESGCM(_dek(citizen_id)).encrypt(nonce, plaintext, citizen_id.bytes)
 
 
 def decrypt(citizen_id: UUID, blob: bytes) -> bytes:
-    raise NotImplementedError("shared.crypto.decrypt: Разработчик 2")
+    blob = bytes(blob)
+    if blob[:1] != _VERSION:
+        raise CryptoError("unknown ciphertext version")
+    nonce, body = blob[1:1 + _NONCE], blob[1 + _NONCE:]
+    try:
+        return AESGCM(_dek(citizen_id)).decrypt(nonce, body, citizen_id.bytes)
+    except InvalidTag as e:
+        raise CryptoError("ciphertext is corrupted or belongs to another citizen") from e
 
 
 def _hmac_hex(key: str, data: bytes) -> str:
