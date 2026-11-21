@@ -18,6 +18,7 @@ tags:
   - {name: documents, description: Разработчик 1}
   - {name: guard, description: Разработчик 3}
   - {name: assistant, description: Разработчик 2}
+  - {name: analytics, description: Панель рисков — обезличенные агрегаты}
   - {name: internal, description: Подписанные HMAC внутренние вызовы}
 
 paths:
@@ -621,6 +622,63 @@ paths:
                   unverified: {type: array, items: {type: string}}
                   tool_calls: {type: integer}
 
+  /v1/checks:
+    post:
+      tags: [documents]
+      operationId: createCheck
+      summary: Проверка перед сделкой / кабинет нотариуса — уровень риска по правилам R1–R8, не проверенное названо прямо
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CheckRequest"}
+      responses:
+        "200":
+          description: Результат проверки
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Check"}
+        default: {$ref: "#/components/responses/Problem"}
+  /v1/checks/{check_id}:
+    get:
+      tags: [documents]
+      operationId: getCheck
+      summary: Результат проверки и её статус (pending, approved, denied, expired)
+      parameters:
+        - {name: check_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        "200":
+          description: Проверка
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Check"}
+        default: {$ref: "#/components/responses/Problem"}
+  /analytics/risks:
+    get:
+      tags: [analytics]
+      operationId: analyticsRisks
+      summary: Панель рисков Минюста — обезличенные агрегаты по тревогам
+      parameters:
+        - {name: days, in: query, schema: {type: integer, minimum: 1, maximum: 365, default: 30}}
+      responses:
+        "200":
+          description: Агрегаты без личных данных
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RiskStats"}
+        default: {$ref: "#/components/responses/Problem"}
+  /analytics/documents:
+    get:
+      tags: [analytics]
+      operationId: analyticsDocuments
+      summary: Панель рисков Минюста — обезличенные агрегаты по документам
+      responses:
+        "200":
+          description: Агрегаты без личных данных
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DocumentStats"}
+        default: {$ref: "#/components/responses/Problem"}
 components:
   parameters:
     Cursor: {name: cursor, in: query, schema: {type: string}, description: непрозрачный курсор из next_cursor}
@@ -853,3 +911,106 @@ components:
         url: {type: string}
         score: {type: number}
         text: {type: string}
+
+    CheckRequest:
+      type: object
+      required: [poa_number]
+      properties:
+        poa_number: {type: string, minLength: 3, maxLength: 40}
+        acts_by_poa: {type: boolean, default: true}
+        poa_issued_at: {type: [string, "null"], format: date}
+        seller_age: {type: [integer, "null"], minimum: 0, maximum: 130}
+        cadastre_number: {type: [string, "null"], maxLength: 40}
+
+    CheckReason:
+      type: object
+      required: [rule, level, text, text_uz]
+      properties:
+        rule: {type: string}
+        level: {enum: [low, medium, high, block]}
+        text: {type: string}
+        text_uz: {type: string}
+
+    Check:
+      type: object
+      required: [check_id, status, risk_level, reasons, consent_required, not_checked, registry, known_in_justina, checked_at]
+      properties:
+        check_id: {type: string, format: uuid}
+        status: {enum: [pending, approved, denied, expired]}
+        risk_level: {enum: [low, medium, high, block]}
+        reasons: {type: array, items: {$ref: "#/components/schemas/CheckReason"}}
+        consent_required: {type: boolean}
+        not_checked:
+          type: array
+          items:
+            type: object
+            required: [rule, text, text_uz]
+            properties:
+              rule: {type: string}
+              text: {type: string}
+              text_uz: {type: string}
+        registry:
+          type: object
+          required: [found, status, fields, unavailable]
+          properties:
+            found: {type: boolean}
+            status: {type: string}
+            fields: {type: object, additionalProperties: {type: string}}
+            unavailable: {type: boolean}
+        known_in_justina: {type: boolean}
+        checked_at: {type: string}
+
+    RiskStats:
+      type: object
+      required: [days, alerts, answered, not_me, not_me_share, by_rule, per_day, delivery_seconds, generated_at]
+      properties:
+        days: {type: integer}
+        alerts: {type: integer}
+        answered: {type: integer}
+        not_me: {type: integer}
+        not_me_share: {type: [number, "null"]}
+        by_rule:
+          type: array
+          items:
+            type: object
+            required: [rule_id, severity, count, not_me, me]
+            properties:
+              rule_id: {type: string}
+              severity: {type: string}
+              count: {type: integer}
+              not_me: {type: integer}
+              me: {type: integer}
+        per_day:
+          type: array
+          items:
+            type: object
+            required: [day, count, critical]
+            properties:
+              day: {type: string}
+              count: {type: integer}
+              critical: {type: integer}
+        delivery_seconds:
+          type: object
+          required: [measured, p50, p95]
+          properties:
+            measured: {type: integer}
+            p50: {type: [number, "null"]}
+            p95: {type: [number, "null"]}
+        generated_at: {type: string}
+
+    DocumentStats:
+      type: object
+      required: [citizens, documents, by_kind_status, generated_at]
+      properties:
+        citizens: {type: integer}
+        documents: {type: integer}
+        by_kind_status:
+          type: array
+          items:
+            type: object
+            required: [kind, status, count]
+            properties:
+              kind: {type: string}
+              status: {type: string}
+              count: {type: integer}
+        generated_at: {type: string}

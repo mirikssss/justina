@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from storozh.documents import service
+from storozh.documents import checks, service
 from storozh.shared.auth import Citizen, current_citizen, internal_request
 from storozh.shared.contracts import SourceSnapshot
 
@@ -79,3 +79,26 @@ async def refresh(document_id: UUID):
         await service.request_refresh(document_id)
     except service.NotFound as e:
         raise _not_found(e) from e
+
+
+# --- Проверка перед сделкой и кабинет нотариуса (00-project-overview, «API сторожа») ---
+
+
+@router.post("/v1/checks")
+async def create_check(body: checks.CheckRequest, citizen: Citizen = Depends(current_citizen)):
+    """Синхронно: уровень риска, причины, нужно ли подтверждение доверителя, что не проверено (бюджет — до 2 с, реестр — до 8 с)."""
+    return await checks.run_check(citizen.id, body)
+
+
+@router.get("/v1/checks/{check_id}")
+async def get_check(check_id: UUID, citizen: Citizen = Depends(current_citizen)):
+    found = await checks.get_check(citizen.id, check_id)
+    if found is None:
+        raise HTTPException(status_code=404, detail="check not found")
+    return found
+
+
+@router.get("/analytics/documents")
+async def analytics_documents(citizen: Citizen = Depends(current_citizen)):
+    """Панель рисков: обезличенные агрегаты по документам (без личных данных)."""
+    return await checks.document_stats()

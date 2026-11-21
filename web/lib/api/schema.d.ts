@@ -619,6 +619,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Проверка перед сделкой / кабинет нотариуса — уровень риска по правилам R1–R8, не проверенное названо прямо */
+        post: operations["createCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/checks/{check_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Результат проверки и её статус (pending, approved, denied, expired) */
+        get: operations["getCheck"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analytics/risks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Панель рисков Минюста — обезличенные агрегаты по тревогам */
+        get: operations["analyticsRisks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analytics/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Панель рисков Минюста — обезличенные агрегаты по документам */
+        get: operations["analyticsDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -846,6 +914,82 @@ export interface components {
             url?: string;
             score?: number;
             text?: string;
+        };
+        CheckRequest: {
+            poa_number: string;
+            /** @default true */
+            acts_by_poa: boolean;
+            /** Format: date */
+            poa_issued_at?: string | null;
+            seller_age?: number | null;
+            cadastre_number?: string | null;
+        };
+        CheckReason: {
+            rule: string;
+            /** @enum {unknown} */
+            level: "low" | "medium" | "high" | "block";
+            text: string;
+            text_uz: string;
+        };
+        Check: {
+            /** Format: uuid */
+            check_id: string;
+            /** @enum {unknown} */
+            status: "pending" | "approved" | "denied" | "expired";
+            /** @enum {unknown} */
+            risk_level: "low" | "medium" | "high" | "block";
+            reasons: components["schemas"]["CheckReason"][];
+            consent_required: boolean;
+            not_checked: {
+                rule: string;
+                text: string;
+                text_uz: string;
+            }[];
+            registry: {
+                found: boolean;
+                status: string;
+                fields: {
+                    [key: string]: string;
+                };
+                unavailable: boolean;
+            };
+            known_in_justina: boolean;
+            checked_at: string;
+        };
+        RiskStats: {
+            days: number;
+            alerts: number;
+            answered: number;
+            not_me: number;
+            not_me_share: number | null;
+            by_rule: {
+                rule_id: string;
+                severity: string;
+                count: number;
+                not_me: number;
+                me: number;
+            }[];
+            per_day: {
+                day: string;
+                count: number;
+                critical: number;
+            }[];
+            delivery_seconds: {
+                measured: number;
+                p50: number | null;
+                p95: number | null;
+            };
+            generated_at: string;
+        };
+        DocumentStats: {
+            citizens: number;
+            documents: number;
+            by_kind_status: {
+                kind: string;
+                status: string;
+                count: number;
+            }[];
+            generated_at: string;
         };
         /**
          * NormalizedDocument
@@ -1875,6 +2019,98 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    createCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Результат проверки */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Check"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                check_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Проверка */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Check"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    analyticsRisks: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Агрегаты без личных данных */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskStats"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    analyticsDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Агрегаты без личных данных */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentStats"];
+                };
+            };
+            default: components["responses"]["Problem"];
         };
     };
 }

@@ -18,6 +18,9 @@ const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/alerts", label: "Bildirishnomalar", icon: "bell" },
   { href: "/sources", label: "Manbalar", icon: "layers" },
   { href: "/family", label: "Oila", icon: "family" },
+  { href: "/precheck", label: "Bitimdan oldin tekshirish", icon: "scale" },
+  { href: "/notary", label: "Notarius kabineti", icon: "gavel" },
+  { href: "/ministry", label: "Xavf paneli", icon: "shield2" },
 ];
 
 function initials(name: string) {

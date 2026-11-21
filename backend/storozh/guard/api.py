@@ -8,11 +8,18 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, HTTPException, Response
 from pydantic import BaseModel, Field
 
-from storozh.guard import service
+from storozh.guard import analytics, service
 from storozh.shared.auth import Citizen, current_citizen
 from storozh.shared.problem import problem
 
 router = APIRouter(prefix="/guard", tags=["guard"], dependencies=[Depends(current_citizen)])
+analytics_router = APIRouter(tags=["analytics"], dependencies=[Depends(current_citizen)])
+
+
+@analytics_router.get("/analytics/risks")
+async def analytics_risks(days: int = 30):
+    """Панель рисков Минюста: обезличенные агрегаты по тревогам (без личных данных)."""
+    return await analytics.risk_stats(days)
 
 
 class VerdictIn(BaseModel):
