@@ -1,1 +1,40 @@
-<!-- court_claim: шаблон вычитывает юрист команды (Разработчик 2) -->
+{# Черновик искового заявления о признании доверенности (сделки) недействительной.
+   ЧЕРНОВИК ШАБЛОНА — вычитывает юрист команды: подсудность, госпошлина, перечень приложений. #}
+{% extends "_base.html" %}
+{% block body %}
+{% if lang == "uz" %}
+<div class="to">
+  <p>Fuqarolik ishlari bo‘yicha tuman (shahar) sudiga</p>
+  <p>Da’vogar: {{ applicant.name }}, JShShIR {{ applicant.pinfl or "______________" }}</p>
+  <p>Javobgar: {{ doc.counterparty or "______________" }}</p>
+</div>
+<h1>Da’vo arizasi</h1>
+<p class="sub">ishonchnomani (bitimni) haqiqiy emas deb topish to‘g‘risida</p>
+<p>{{ doc.title }}{% if doc.number %} (№ {{ doc.number }}){% endif %}{% if doc.issued_at %}, {{ doc.issued_at }}{% endif %}
+mening nomimdan rasmiylashtirilgan{% if doc.object %}, obyekt: {{ doc.object }}{% endif %}. Men ushbu hujjatni
+bermaganman (unga rozilik bildirmaganman) va bu haqda «Mening hujjatlarim» xabarnomasi orqali bilib oldim.</p>
+<p>Fuqarolik kodeksining 113, 116 va 123-moddalariga asoslanib, so‘rayman:</p>
+<ol>
+  <li>{{ doc.title }}{% if doc.number %} № {{ doc.number }}{% endif %} haqiqiy emas deb topilsin;</li>
+  <li>haqiqiy bo‘lmagan bitimning oqibatlari qo‘llanilsin.</li>
+</ol>
+<div class="sign"><span>Sana: {{ today }}</span><span>Imzo: <span class="blank"></span></span></div>
+{% else %}
+<div class="to">
+  <p>В районный (городской) суд по гражданским делам</p>
+  <p>Истец: {{ applicant.name }}, ПИНФЛ {{ applicant.pinfl or "______________" }}</p>
+  <p>Ответчик: {{ doc.counterparty or "______________" }}</p>
+</div>
+<h1>Исковое заявление</h1>
+<p class="sub">о признании доверенности (сделки) недействительной</p>
+<p>От моего имени оформлен документ: {{ doc.title }}{% if doc.number %} (№ {{ doc.number }}){% endif %}{% if doc.issued_at %}
+от {{ doc.issued_at }}{% endif %}{% if doc.object %}, объект: {{ doc.object }}{% endif %}. Этот документ я не выдавал(а)
+и согласия на него не давал(а); о нём я узнал(а) из уведомления модуля «Мои документы».</p>
+<p>На основании статей 113, 116 и 123 Гражданского кодекса Республики Узбекистан прошу:</p>
+<ol>
+  <li>признать недействительным документ «{{ doc.title }}»{% if doc.number %} № {{ doc.number }}{% endif %};</li>
+  <li>применить последствия недействительности сделки.</li>
+</ol>
+<div class="sign"><span>Дата: {{ today }}</span><span>Подпись: <span class="blank"></span></span></div>
+{% endif %}
+{% endblock %}

@@ -525,6 +525,20 @@ paths:
             application/json:
               schema: {type: array, items: {$ref: "#/components/schemas/ChatMessage"}}
         default: {$ref: "#/components/responses/Problem"}
+  /assist/drafts/{draft_id}:
+    get:
+      tags: [assistant]
+      operationId: getDraftPdf
+      summary: PDF черновика заявления (ст. 31 или иск) — ссылка из DraftRef.url; только владельцу
+      parameters:
+        - {name: draft_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        default: {$ref: "#/components/responses/Problem"}
   /assist/search:
     get:
       tags: [assistant]

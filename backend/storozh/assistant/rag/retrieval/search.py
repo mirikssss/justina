@@ -30,9 +30,20 @@ class Hit:
     url: str
     article_id: int
     path: list[str]
+    act_id: int = 0  # id акта на lex.uz (языковой версии)
     score: float = 0.0
     via: set[str] = field(default_factory=set)
     related: list["Hit"] = field(default_factory=list)
+
+    @property
+    def act_title(self) -> str:
+        src = corpus.BY_CODE[self.code]
+        return src.name_uz if self.lang == "uz" else src.name_ru
+
+    @property
+    def article(self) -> str:
+        """Подпись для ссылки: «ст. 31», «п. 16 прил. 4» (FR-A-02)."""
+        return corpus.BY_CODE[self.code].article_label(self.number, self.lang)
 
 
 def _lexical(pq: ParsedQuery) -> list[Key]:
@@ -94,12 +105,16 @@ def _pick_lang(rows: list[dict], lang: str) -> dict[Key, dict]:
 def _to_hit(a: dict, score: float = 0.0, via: set[str] | None = None) -> Hit:
     return Hit(
         code=a["code"], number=a["number"], title=a["title"], lang=a["lang"], text=a["body"],
-        url=corpus.article_url(a), article_id=a["id"], path=a["path"], score=score, via=via or set(),
+        url=corpus.article_url(a), article_id=a["id"], path=a["path"], act_id=a["lex_id"], score=score,
+        via=via or set(),
     )
 
 
-def search(query: str, k: int = 8, rerank: bool | None = None, expand: bool = True, codes: list[str] | None = None) -> list[Hit]:
+def search(query: str, k: int = 8, rerank: bool | None = None, expand: bool = True, codes: list[str] | None = None,
+           kinds: list | None = None) -> list[Hit]:
+    """codes — явные акты; kinds — типы документа (FR-A-03), из них выводятся акты."""
     pq = parse(query)
+    codes = codes or corpus.codes_for_kinds(kinds)
     if codes:
         pq.codes = codes
     if rerank is None:
@@ -131,3 +146,12 @@ def search(query: str, k: int = 8, rerank: bool | None = None, expand: bool = Tr
         for h in hits:
             h.related = [_to_hit(r, via={"ref"}) for r in by_src.get(h.article_id, [])][:5]
     return hits
+
+
+def in_lang(hits: list[Hit], lang: str) -> list[Hit]:
+    """Те же статьи в версии на языке ответа, если она есть (регламенты № 613/726 есть только на узбекском)."""
+    want = [(h.code, h.number) for h in hits if h.lang != lang]
+    if not want:
+        return hits
+    other = {(a["code"], a["number"]): a for a in corpus.articles_by_keys(want) if a["lang"] == lang}
+    return [_to_hit(other[(h.code, h.number)], h.score, h.via) if (h.code, h.number) in other else h for h in hits]

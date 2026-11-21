@@ -279,5 +279,12 @@ export const RU: Record<string, string> = {
   "«Mening hujjatlarim»ga kirish": "Вход в «Мои документы»",
   "Telegram-bot orqali kirish: havola bir martalik va 5 daqiqa amal qiladi.":
     "Вход через Telegram-бота: ссылка одноразовая и действует 5 минут.",
+  "Telegram-bot orqali kirish: havola bir martalik va 5 daqiqa amal qiladi. Bot saytga kirish uchun havola yuboradi.":
+    "Вход через Telegram-бота: ссылка одноразовая и действует 5 минут. Бот пришлёт ссылку для входа на сайт.",
+  "Havola eskirgan yoki allaqachon ishlatilgan. Qaytadan kiring.":
+    "Ссылка устарела или уже использована. Войдите ещё раз.",
+  "Kirishni boshlab bo'lmadi. Qayta urinib ko'ring.": "Не удалось начать вход. Попробуйте ещё раз.",
+  "Telegram ochilmagan bo'lsa:": "Если Telegram не открылся:",
+  "Javob olishning imkoni bo‘lmadi. Qayta urinib ko‘ring.": "Не удалось получить ответ. Попробуйте ещё раз.",
   "Telegram orqali kirish": "Войти через Telegram",
 };

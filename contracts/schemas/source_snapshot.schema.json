@@ -12,6 +12,7 @@
     "source": {"type": "string", "pattern": "^[a-z0-9_]+\\.[a-z0-9_]+$"},
     "fetched_at": {"type": "string", "format": "date-time"},
     "complete": {"type": "boolean", "description": "true — в снимке весь список; только тогда пропажа записи = document.disappeared (после двух снимков подряд)"},
-    "documents": {"type": "array", "items": {"$ref": "normalized_document.schema.json"}}
+    "documents": {"type": "array", "items": {"$ref": "normalized_document.schema.json"}},
+    "raw": {"type": "object", "description": "URI документа -> сырые данные источника (с ПИНФЛ и ФИО). Ingest шифрует их в document_versions.raw_enc, в payload и логи не попадают", "additionalProperties": {"type": "object"}}
   }
 }

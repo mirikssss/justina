@@ -44,7 +44,9 @@ def cost(model: str, u: dict) -> float:
 
 
 def golden() -> list[dict]:
-    return [json.loads(x) for x in (HERE / "golden.jsonl").read_text().splitlines() if x]
+    from storozh.assistant.eval.run import load
+
+    return load()
 
 
 def load(model: str) -> dict[str, dict]:
@@ -62,7 +64,7 @@ def save(model: str, rows: dict[str, dict]) -> None:
 def _one(model: str, effort: str, g: dict) -> dict:
     t0 = time.time()
     a = answer(g["q"], model=model, effort=effort)
-    expect = {tuple(e) for e in g["expect"]}
+    expect = {tuple(map(str, e)) for e in g["expect"]}
     cited = [(c.code, c.number) for c in a.citations]
     return {
         "q": g["q"], "expect": g["expect"], "model": model, "effort": effort,

@@ -23,6 +23,7 @@ def connect(citizen: UUID = typer.Option(DEV_CITIZEN_ID, help="citizen_id")):
 
         from storozh.documents import service
         from storozh.shared import db
+        from storozh.shared.config import settings
 
         async with async_playwright() as pw:
             b = await pw.chromium.launch(headless=False)
@@ -38,6 +39,20 @@ def connect(citizen: UUID = typer.Option(DEV_CITIZEN_ID, help="citizen_id")):
             except Exception as e:
                 await b.close()
                 raise typer.Exit(f"Вход не завершён: {e}. Ничего не сохранено.") from e
+            # Birdarcha держит свой токен в localStorage своего origin: заходим туда тем же контекстом (SSO OneID).
+            try:
+                await page.goto(settings.birdarcha_base_url)
+                await page.wait_for_url(lambda u: "id.egov.uz" not in u and "login" not in u.lower(), timeout=60_000)
+                await page.wait_for_load_state("networkidle")
+            except Exception as e:  # noqa: BLE001 — источник необязательный: без него остальные работают
+                typer.echo(f"Birdarcha не подключён ({type(e).__name__}); источник birdarcha.company останется без сессии.")
+            # Налоговый кабинет (my.soliq.uz): тот же вход OneID; выбор кабинета юрлица делает человек сам.
+            try:
+                await page.goto(settings.soliq_base_url.rstrip("/") + "/legal")
+                await page.wait_for_url(lambda u: "id.egov.uz" not in u and "login" not in u.lower(), timeout=60_000)
+                await page.wait_for_load_state("networkidle")
+            except Exception as e:  # noqa: BLE001
+                typer.echo(f"my.soliq.uz не подключён ({type(e).__name__}); источники soliq.* останутся без сессии.")
             state = await ctx.storage_state()
             await b.close()
         await service.save_session(citizen, dict(state))

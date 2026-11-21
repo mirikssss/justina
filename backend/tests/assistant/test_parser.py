@@ -40,4 +40,34 @@ def test_text_utils():
 
 def test_exact_ref():
     assert parse("статья 150 ГК").exact_keys == [("gk1", "150"), ("gk2", "150")]
-    assert ("tk", "217") in parse("217-modda mehnat kodeksi").exact_keys
+    assert parse("31-modda notariat to'g'risida").exact_keys == [("notary", "31")]
+    assert parse("статья 31 закона о нотариате").exact_keys == [("notary", "31")]
+
+
+ITEMS_PAGE = """<html><body><div class="lang2"><div id="divCont">
+ <div class="ACT_TITLE"><div id="1">Reglamentni tasdiqlash toʻgʻrisida</div></div>
+ <div class="ACT_TEXT"><div id="2">1. Reglament tasdiqlansin.</div></div>
+ <div class="APPL_BANNER_LANDSCAPE_TITLE"><div id="3">Vazirlar Mahkamasining 726-son qaroriga 4-ILOVA</div></div>
+ <div class="ACT_TITLE_APPL"><div id="4">Ishonchnomalarni tasdiqlashning</div></div>
+ <div class="ACT_FORM"><div id="5">MAʼMURIY REGLAMENTI</div></div>
+ <div class="TEXT_HEADER_DEFAULT"><div id="6">1-bob. Umumiy qoidalar</div></div>
+ <div class="ACT_TEXT"><div id="7">19. Ishonchli vakilning ishtiroki talab etilmaydi.</div></div>
+ <div class="ACT_TEXT"><div id="8">Davomi.</div></div>
+ <div class="APPL_BANNER_LANDSCAPE_TITLE"><div id="9">Ishonchnomalarni tasdiqlash reglamentiga ILOVA</div></div>
+ <div class="ACT_TEXT"><div id="10">1. Sxema bandi — tashlab yuboriladi.</div></div>
+</div></div></body></html>"""
+
+
+def test_parse_items_with_appendices():
+    doc = parse_bilingual(ITEMS_PAGE, 5118081)["uz"]
+    assert [a.number for a in doc.articles] == ["1", "4-19"]
+    item = doc.articles[1]
+    assert item.path == ["Ishonchnomalarni tasdiqlashning maʼmuriy reglamenti", "1-bob. Umumiy qoidalar"]
+    assert item.body.endswith("Davomi.")
+
+
+def test_article_label():
+    from storozh.assistant.rag.corpus.sources import BY_CODE
+
+    assert BY_CODE["reg726"].article_label("4-19") == "п. 19 прил. 4"
+    assert BY_CODE["notary"].article_label("31", "uz") == "31-modda"

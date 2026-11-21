@@ -1,0 +1,113 @@
+name: deploy
+
+# Автодеплой на justina.clusteros.co.uz: запускается после зелёного `ci` на main.
+# Репо приватное, токена GitHub на сервере нет — код уходит архивом по ssh, дальше infra/deploy/deploy.sh.
+# Нужны секреты репозитория (Settings → Secrets and variables → Actions), см. infra/deploy/README.md:
+#   DEPLOY_SSH_KEY      приватный ключ пользователя деплоя (публичная часть — в ~/.ssh/authorized_keys на сервере)
+#   DEPLOY_HOST         адрес сервера
+#   DEPLOY_USER         пользователь на сервере
+#   DEPLOY_KNOWN_HOSTS  строка(и) known_hosts сервера (ssh-keyscan -t ed25519 <host>), проверка отпечатка
+# Без секретов job не падает, а пропускается с понятным сообщением.
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "Залить демо-данные после деплоя (storozh documents seed)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false   # не обрываем деплой на полпути: следующий встанет в очередь
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # Только после успешного ci на push в main (а не на pull_request) либо ручной запуск.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      SITE_URL: https://justina.clusteros.co.uz
+    steps:
+      - name: Проверить, что секреты заданы
+        id: guard
+        run: |
+          missing=""
+          for v in DEPLOY_SSH_KEY DEPLOY_HOST DEPLOY_USER DEPLOY_KNOWN_HOSTS; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::warning::Деплой пропущен: не заданы секреты:$missing (см. infra/deploy/README.md)"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.guard.outputs.skip != 'true'
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Настроить ssh
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # Сервер режет всплески новых подключений — все команды идут одним общим соединением.
+          cat > ~/.ssh/config <<EOF
+          Host deploy
+            HostName $DEPLOY_HOST
+            User $DEPLOY_USER
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            ConnectTimeout 60
+            ControlMaster auto
+            ControlPath ~/.ssh/cm-deploy
+            ControlPersist 10m
+          EOF
+
+      - name: Залить код архивом
+        if: steps.guard.outputs.skip != 'true'
+        run: git archive --format=tar.gz HEAD | ssh deploy 'mkdir -p ~/justina && tar -xz -C ~/justina'
+
+      - name: Собрать и поднять (deploy.sh)
+        if: steps.guard.outputs.skip != 'true'
+        run: ssh deploy 'cd ~/justina && bash infra/deploy/deploy.sh'
+
+      - name: Демо-данные
+        if: steps.guard.outputs.skip != 'true' && github.event_name == 'workflow_dispatch' && inputs.seed
+        run: |
+          ssh deploy 'cd ~/justina && docker compose -p justina -f infra/docker-compose.yml -f infra/docker-compose.prod.yml exec -T api python -m storozh documents seed'
+
+      - name: Проверка после деплоя
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          # контейнеры поднимаются не мгновенно: ждём до ~2 минут
+          for i in $(seq 1 24); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/documents" || true)
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          echo "GET /documents -> $code"; [ "$code" = "200" ]
+          internal=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/api/internal/ingest/snapshots" || true)
+          echo "internal ingest снаружи -> $internal (ожидаем 404)"; [ "$internal" = "404" ]
+          curl -fsS "$SITE_URL/api/me" > /dev/null
+
+      - name: Закрыть ssh
+        if: always() && steps.guard.outputs.skip != 'true'
+        run: ssh -O exit deploy 2>/dev/null || true

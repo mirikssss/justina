@@ -1,1 +1,38 @@
-<!-- art31_postpone: шаблон вычитывает юрист команды (Разработчик 2) -->
+{# Заявление об отложении нотариального действия по ч. 4 ст. 31 Закона «О нотариате».
+   ЧЕРНОВИК ШАБЛОНА — вычитывает юрист команды. ИИ шаблон не меняет, только подставляются реквизиты. #}
+{% extends "_base.html" %}
+{% block body %}
+{% if lang == "uz" %}
+<div class="to">
+  <p>Notarius: {{ notary }}</p>
+  <p>Arizachi: {{ applicant.name }}</p>
+  <p>JShShIR: {{ applicant.pinfl or "______________" }}</p>
+</div>
+<h1>Ariza</h1>
+<p class="sub">notarial harakatni amalga oshirishni kechiktirish to‘g‘risida<br>
+(«Notariat to‘g‘risida»gi Qonunning 31-moddasi to‘rtinchi qismi)</p>
+<p>Menga ma’lum bo‘lishicha, sizda mening manfaatlarimga daxldor bo‘lgan notarial harakat amalga oshirilishi
+kutilmoqda: {{ doc.title }}{% if doc.number %} (№ {{ doc.number }}){% endif %}{% if doc.issued_at %}, {{ doc.issued_at }}{% endif %}{% if doc.object %}, obyekt: {{ doc.object }}{% endif %}.</p>
+<p>Men ushbu notarial harakat tasdiqlanishi so‘ralayotgan huquq yoki faktni nizolashish uchun sudga murojaat
+qilmoqchiman. Shu munosabat bilan «Notariat to‘g‘risida»gi Qonunning 31-moddasi to‘rtinchi qismiga asosan
+mazkur notarial harakatni amalga oshirishni o‘n kundan oshmagan muddatga kechiktirishingizni so‘rayman.</p>
+<p>Sudga da’vo arizasi berilganligi to‘g‘risidagi ma’lumotni belgilangan muddatda taqdim etaman.</p>
+<div class="sign"><span>Sana: {{ today }}</span><span>Imzo: <span class="blank"></span></span></div>
+{% else %}
+<div class="to">
+  <p>Нотариусу: {{ notary }}</p>
+  <p>от {{ applicant.name }}</p>
+  <p>ПИНФЛ: {{ applicant.pinfl or "______________" }}</p>
+</div>
+<h1>Заявление</h1>
+<p class="sub">об отложении совершения нотариального действия<br>
+(часть четвёртая статьи 31 Закона Республики Узбекистан «О нотариате»)</p>
+<p>Мне стало известно, что вами готовится к совершению нотариальное действие, затрагивающее мои права:
+{{ doc.title }}{% if doc.number %} (№ {{ doc.number }}){% endif %}{% if doc.issued_at %}, от {{ doc.issued_at }}{% endif %}{% if doc.object %}, объект: {{ doc.object }}{% endif %}.</p>
+<p>Я намерен(а) обратиться в суд для оспаривания права или факта, об удостоверении которого просит другое
+заинтересованное лицо. На основании части четвёртой статьи 31 Закона «О нотариате» прошу отложить совершение
+указанного нотариального действия на срок не более десяти дней.</p>
+<p>Сообщение суда о поступлении искового заявления будет представлено в установленный срок.</p>
+<div class="sign"><span>Дата: {{ today }}</span><span>Подпись: <span class="blank"></span></span></div>
+{% endif %}
+{% endblock %}

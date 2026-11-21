@@ -25,8 +25,8 @@ SOURCE_TITLES = {a.source_id: a.title for a in ADAPTERS}
 POLL_INTERVALS = {a.source_id: a.poll_interval_s for a in ADAPTERS}
 
 
-class NotFound(Exception):
-    pass
+class NotFound(LookupError):
+    """Документа нет. LookupError — чтобы другие контексты ловили его без импорта documents.service."""
 
 
 # --------------------------------------------------------------------------- ingestion (UC-D2..D4)
@@ -64,6 +64,14 @@ async def ingest_snapshot(snapshot: SourceSnapshot) -> dict[str, int]:
     return {"new_versions": new_versions}
 
 
+def raw_enc_for(snapshot: SourceSnapshot, uri: str) -> bytes | None:
+    """FR-D-06: сырые данные источника — зашифрованным блобом ключом гражданина; нет сырых — NULL."""
+    raw = snapshot.raw.get(uri)
+    if not raw:
+        return None
+    return crypto.encrypt(snapshot.citizen_id, json.dumps(raw, ensure_ascii=False, default=str).encode())
+
+
 async def _apply_document(conn, snapshot: SourceSnapshot, doc: NormalizedDocument, now: datetime) -> int:
     # dedupe_key начинается с citizen_id: одну доверенность видят обе стороны, у каждой — своё событие
     citizen = snapshot.citizen_id
@@ -78,7 +86,7 @@ async def _apply_document(conn, snapshot: SourceSnapshot, doc: NormalizedDocumen
         document_id = await repo.insert_document(conn, citizen_id=citizen, doc=change.payload, seen_at=now)
         await repo.insert_version(conn, document_id=document_id, version_no=1, content_hash=change.content_hash,
                                   payload=change.payload, snapshot_id=snapshot.snapshot_id,
-                                  fetched_at=snapshot.fetched_at)
+                                  fetched_at=snapshot.fetched_at, raw_enc=raw_enc_for(snapshot, doc.uri))
         await outbox.publish(
             conn, type="document.created", subject=doc.uri, citizen_id=citizen,
             data={"document_id": str(document_id), "version_no": 1, "kind": doc.kind.value,
@@ -90,7 +98,8 @@ async def _apply_document(conn, snapshot: SourceSnapshot, doc: NormalizedDocumen
     document_id, prev = current["id"], current["current_version"]
     version_no = prev + 1
     await repo.insert_version(conn, document_id=document_id, version_no=version_no, content_hash=change.content_hash,
-                              payload=change.payload, snapshot_id=snapshot.snapshot_id, fetched_at=snapshot.fetched_at)
+                              payload=change.payload, snapshot_id=snapshot.snapshot_id, fetched_at=snapshot.fetched_at,
+                              raw_enc=raw_enc_for(snapshot, doc.uri))
     await repo.bump_document(conn, document_id=document_id, version_no=version_no, doc=change.payload, seen_at=now)
     base = {"document_id": str(document_id), "version_no": version_no, "prev_version_no": prev,
             "changed_fields": change.changed_fields}

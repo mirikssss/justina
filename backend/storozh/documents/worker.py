@@ -62,8 +62,9 @@ async def poll_with_session(session: BrowserSession, adapter: SourceAdapter, cli
     citizen_id = session.citizen_id
     raws = await adapter.fetch(session)
     docs = [adapter.normalize(r) for r in raws]
+    raw = {d.uri: r.data for d, r in zip(docs, raws, strict=True)}
     snapshot = SourceSnapshot(snapshot_id=uuid.uuid4(), citizen_id=citizen_id, source=adapter.source_id,
-                              fetched_at=datetime.now(UTC), complete=adapter.complete, documents=docs)
+                              fetched_at=datetime.now(UTC), complete=adapter.complete, documents=docs, raw=raw)
     return await send_snapshot(snapshot, client)
 
 

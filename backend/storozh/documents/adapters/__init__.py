@@ -1,12 +1,23 @@
 """Адаптеры источников. Новый реестр: папка adapters/<source>/ + строка в ADAPTERS."""
 
+from storozh.documents.adapters.birdarcha_company.adapter import BirdarchaCompanyAdapter
 from storozh.documents.adapters.mygov_car_poa.adapter import MyGovCarPoaAdapter
+from storozh.documents.adapters.mygov_career.adapter import MyGovCareerAdapter
 from storozh.documents.adapters.mygov_notarial.adapter import MyGovNotarialAdapter
 from storozh.documents.adapters.mygov_notifications.adapter import MyGovNotificationsAdapter
 from storozh.documents.adapters.mygov_requests.adapter import MyGovRequestsAdapter
+from storozh.documents.adapters.soliq_legal.adapter import (
+    SoliqCompanyAdapter,
+    SoliqPropertyAdapter,
+    SoliqTaxesAdapter,
+    SoliqVehiclesAdapter,
+)
 from storozh.documents.adapters.vakolat.adapter import VakolatAdapter
 from storozh.documents.ports import SourceAdapter
 
 ADAPTERS: list[SourceAdapter] = [
-    MyGovCarPoaAdapter(), MyGovRequestsAdapter(), MyGovNotificationsAdapter(), MyGovNotarialAdapter(), VakolatAdapter(),
+    MyGovCarPoaAdapter(), MyGovRequestsAdapter(), MyGovNotificationsAdapter(), MyGovCareerAdapter(),
+    BirdarchaCompanyAdapter(),
+    SoliqCompanyAdapter(), SoliqPropertyAdapter(), SoliqVehiclesAdapter(), SoliqTaxesAdapter(),
+    MyGovNotarialAdapter(), VakolatAdapter(),
 ]
