@@ -189,6 +189,79 @@ button{font-family:inherit;cursor:pointer}
 .srccard .ago small{display:block;font-size:13px;color:var(--muted);font-weight:400}
 .srccard .err{font-size:13px;color:var(--crit);background:var(--crit-bg);border-radius:10px;padding:8px 12px}
 
+/* ===== контекст «Сторож»: тревоги, действия, семья (Разработчик 3) ===== */
+.err{font-size:13.5px;color:var(--crit);background:var(--crit-bg);border-radius:10px;padding:10px 14px}
+
+/* тревоги /alerts */
+.alert{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-card);padding:16px 20px;
+  display:flex;gap:16px;align-items:flex-start;border-left:4px solid var(--border)}
+.alert.sev-critical{border-left-color:var(--crit)}
+.alert.sev-high{border-left-color:var(--warn)}
+.alert.sev-info{border-left-color:var(--blue)}
+.alert .dic{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto}
+.alert-acts{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+
+/* тревоги внутри карточки документа (DocumentGuard) */
+.guard-alerts{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.guard-al{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.guard-al>span:first-child{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto}
+.guard-al>div{flex:1;min-width:0}
+.guard-al b{font-size:14px;display:block}
+.guard-al small{color:var(--muted);font-size:12px}
+
+/* модалка подтверждения (FR-G-14, NFR-G-05) */
+.modal-ov{position:fixed;inset:0;background:rgba(10,15,25,.55);display:grid;place-items:center;z-index:60;padding:20px;
+  padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;width:min(440px,100%);max-height:90vh;overflow:auto;
+  box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.modal-h{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
+.modal-h h3{font-size:18px}
+.modal-x{border:0;background:none;color:var(--muted);display:grid;place-items:center;width:34px;height:34px;border-radius:9px}
+.modal-x:hover{background:var(--surface);color:var(--fg)}
+.modal-b{padding:20px}
+.modal-f{display:flex;gap:10px;justify-content:flex-end;padding:16px 20px;border-top:1px solid var(--border)}
+
+.code-in{width:100%;text-align:center;font-size:32px;font-weight:700;letter-spacing:12px;font-variant-numeric:tabular-nums;
+  padding:14px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface);color:var(--fg);outline:none}
+.code-in.wide{font-size:17px;letter-spacing:1px;text-align:left;padding:13px 15px}
+.code-in:focus{border-color:var(--blue)}
+.code-in::placeholder{color:var(--faint);letter-spacing:12px}
+.code-meta{display:flex;justify-content:space-between;margin-top:12px}
+.count{font-size:13px;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
+.count.err{color:var(--crit);background:none;padding:0}
+
+/* тост (FR-G-14) */
+.toaster{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  display:flex;flex-direction:column;gap:10px;z-index:70;align-items:center;pointer-events:none;width:max-content;max-width:92vw}
+.toast{display:flex;align-items:center;gap:10px;background:var(--fg);color:var(--bg);padding:12px 18px;border-radius:12px;
+  font-weight:600;font-size:14px;box-shadow:0 12px 40px rgba(0,0,0,.3);animation:toast-in .2s ease}
+.toast.t-good{background:var(--good);color:#fff}
+.toast.t-crit{background:var(--crit);color:#fff}
+.toast.t-info{background:var(--blue);color:#fff}
+@keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ход действия: скриншот результата */
+.evidence{display:block;margin-top:14px}
+.evidence img{width:100%;border:1px solid var(--border);border-radius:12px;display:block}
+.evidence .link{margin-top:8px}
+
+/* семья и согласия (FR-G-13) */
+.family-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:20px}
+.scope-list{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.scope{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer}
+.scope.on{border-color:var(--blue);background:var(--light-primary)}
+.scope input{margin-top:3px;width:18px;height:18px;accent-color:var(--blue);flex:0 0 auto}
+.scope b{font-size:14px;display:block}
+.scope small{color:var(--muted);font-size:12.5px}
+.code-box{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px dashed var(--blue);
+  border-radius:12px;padding:12px 16px}
+.code-box .tnum{font-size:26px;font-weight:700;letter-spacing:4px;color:var(--blue)}
+.btn.full{width:100%;justify-content:center}
+.consent-list{display:flex;flex-direction:column;gap:12px}
+.consent{display:flex;gap:14px;align-items:center}
+.consent .dmain{flex:1;min-width:0}
+.avatar.sm{width:42px;height:42px;font-size:15px;flex:0 0 auto;box-shadow:none}
+
 /* ===== адаптив, как у портала: меню-иконки до 1500px, выезжающее меню до 992px ===== */
 @media (min-width:993px) and (max-width:1500px){
   .rail{width:84px;flex-basis:84px}
@@ -225,5 +298,11 @@ button{font-family:inherit;cursor:pointer}
   .monitor{padding:14px 16px}
   .monitor .btn{width:100%}
   .card,.dhead,.srccard{padding:18px}
+  .family-grid{grid-template-columns:1fr;gap:14px}
+  .alert{padding:14px 16px;gap:12px}
+  .alert .dic{width:40px;height:40px}
+  .alert-acts .btn{flex:1 1 auto;justify-content:center}
+  .modal-f{flex-direction:column-reverse}
+  .modal-f .btn{width:100%;justify-content:center}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
