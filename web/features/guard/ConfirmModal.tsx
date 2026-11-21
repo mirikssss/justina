@@ -56,6 +56,12 @@ export function ConfirmModal({ action, onClose, onConfirmed }:
       if (status === 429) {
         setAttempts(0);
         setErr(t("Urinishlar tugadi. Yangi harakat so'rang."));
+      } else if (status === 410) {
+        // сервер считает время сам: код истёк, даже если локальный отсчёт ещё идёт
+        setAttempts(0);
+        setErr(t("Tasdiqlash muddati o'tdi"));
+      } else if (status !== 400) {
+        setErr(t("Tarmoq xatosi. Qaytadan urinib ko'ring."));
       } else {
         setAttempts((a) => Math.max(0, a - 1));
         setErr(t("Kod noto'g'ri. Qaytadan kiriting."));

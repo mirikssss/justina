@@ -5,11 +5,12 @@ import binascii
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, Header, HTTPException, Response
+from pydantic import BaseModel, Field
 
 from storozh.guard import service
 from storozh.shared.auth import Citizen, current_citizen
+from storozh.shared.problem import problem
 
 router = APIRouter(prefix="/guard", tags=["guard"], dependencies=[Depends(current_citizen)])
 
@@ -24,7 +25,7 @@ class ActionIn(BaseModel):
 
 
 class CodeIn(BaseModel):
-    code: str
+    code: str = Field(pattern=r"^[0-9]{6}$")
 
 
 class DraftIn(BaseModel):
@@ -77,25 +78,44 @@ async def document_alerts(document_id: UUID, citizen: Citizen = Depends(current_
     return await service.document_alerts(citizen.id, document_id)
 
 
+def _action_problem(e: service.ActionError) -> Response:
+    resp = problem(e.status, e.title)
+    if e.status == 429:
+        resp.headers["Retry-After"] = "120"
+    return resp
+
+
 @router.post("/actions", status_code=201)
-async def create_action(body: ActionIn, idempotency_key: str = Header(alias="Idempotency-Key"),
+async def create_action(body: ActionIn, idempotency_key: str = Header(alias="Idempotency-Key", min_length=16),
                         citizen: Citizen = Depends(current_citizen)):
-    raise NotImplementedError("POST /guard/actions")
+    try:
+        return await service.create_action(citizen.id, body.document_id, body.type, idempotency_key)
+    except service.ActionError as e:
+        return _action_problem(e)
 
 
 @router.post("/actions/{action_id}/confirm")
-async def confirm_action(action_id: UUID, body: CodeIn):
-    raise NotImplementedError("POST /guard/actions/{id}/confirm")
+async def confirm_action(action_id: UUID, body: CodeIn, citizen: Citizen = Depends(current_citizen)):
+    try:
+        return await service.confirm_action(citizen.id, action_id, body.code)
+    except service.ActionError as e:
+        return _action_problem(e)
 
 
 @router.get("/actions/{action_id}")
-async def get_action(action_id: UUID):
-    raise NotImplementedError("GET /guard/actions/{id}")
+async def get_action(action_id: UUID, citizen: Citizen = Depends(current_citizen)):
+    action = await service.get_action(citizen.id, action_id)
+    if action is None:
+        raise HTTPException(404, "action not found")
+    return action
 
 
 @router.get("/actions/{action_id}/evidence")
-async def action_evidence(action_id: UUID):
-    raise NotImplementedError("GET /guard/actions/{id}/evidence")
+async def action_evidence(action_id: UUID, citizen: Citizen = Depends(current_citizen)):
+    png = await service.action_evidence(citizen.id, action_id)
+    if png is None:
+        raise HTTPException(404, "no evidence")
+    return Response(png, media_type="image/png", headers={"Cache-Control": "private, no-store"})
 
 
 @router.post("/drafts")
