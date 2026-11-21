@@ -4,7 +4,7 @@
 `7d2f738` guard-frontend: экраны · `e0e37bd` guard-frontend: переключатель uz/ru.
 Сверка с ТЗ — `docs/03-dev3-guard-frontend.md`.
 
-Короткий итог: **фронтенд сделан полностью и проверен; правила G1–G7 готовы с тестами; остальной бэкенд «Сторожа» — каркас-заглушки.**
+Короткий итог: **фронтенд сделан полностью и проверен; правила G1–G7 и потребитель событий готовы с тестами (тревоги появляются в `/alerts`); действия, бот, исполнитель — ещё заглушки.**
 
 Ветка смёрджена с `main` (21.11): конфликты в `DocumentAssistant.tsx` и `LoginScreen.tsx` решены — логика из `main`, строки через `t()`.
 
@@ -41,16 +41,16 @@
 | Требование | Что есть сейчас | Что нужно |
 | --- | --- | --- |
 | ~~FR-G-02/03 — правила G1–G7~~ ✅ | `domain/rules/g1…g7_*.py`, тесты `tests/guard/test_rules.py` (23 шт.) | G4 — на внутреннем событии `guard.daily_check` + `RuleContext.today`; G7 — на `alert.created` + `RuleContext.family_consent` (оценивается на каждого родственника с `receive_alerts`). Планировщик G4 и разводка G7 — в worker (шаг 2) |
-| **FR-G-01 — потребитель событий** | `worker.py` ~0.3 КБ | `shared.outbox.consume` на `document.*` и `source.session_expired`, одна тревога на `event_id` (unique) |
+| ~~FR-G-01 — потребитель событий~~ ✅ | `service.handle_event`, `worker.py` (consume + суточный G4 раз в час), `adapters/db` | Тревога на `(event_id, rule_id, citizen_id)` unique; `explain_alert` с таймаутом 5 с → иначе `explanation=null` (FR-G-04). G7: guard слушает и свой `alert.created`. G4: guard ведёт свою таблицу `poa_watch` (схему documents читать нельзя). Тесты: `tests/integration/test_guard_consumer.py` (7 шт.) |
 | **FR-G-05 — Telegram-бот** | `adapters/telegram/{bot,notifier}.py`, `templates/{uz,ru}.py` — все заглушки | `/start link_<token>`, `/start login_<nonce>`, тревоги uz/ru, HMAC-подпись `callback_data`, проверка `chat_id` |
 | **FR-G-07/08 — машина действий + код** | `domain/actions.py` ~0.9 КБ | переходы только вперёд, аудит + `action.updated`; код: 6 цифр, **хеш** в БД, 2 мин, 3 попытки |
 | **FR-G-09 — идемпотентность** | — | `Idempotency-Key` на `POST /guard/actions` возвращает то же действие |
 | **FR-G-10/11 — исполнитель `revoke_car_poa`** | `adapters/actions/mygov_revoke_car_poa/executor.py` ~0.7 КБ | белый список типов, сессия из `SessionProvider`, скриншот в `evidence_enc`, проверка через `request_refresh`; повтор — только до отправки формы (NFR-G-04) |
 | **FR-G-12 — ст.31 / иск** | `adapters/pdf/__init__.py` ~0.1 КБ | вызов `assistant.public.draft_application`, отдача PDF |
 | **FR-G-13 — семья/согласия** | — | сервер `consents`/`invite_codes`, RLS по активному согласию |
-| **§7 — схема БД** | `migrations/guard/001_init.sql` (~3.5 КБ, проверить полноту) | таблицы `alerts, actions, telegram_links, link_tokens, consents, invite_codes` |
-| **§8 — REST** | `api.py` ~2.8 КБ (роуты-заглушки) | реальная реализация всех `/guard/*` |
-| **§9 — события** | — | публикация `alert.created` (`{event_id}:{rule_id}`), `action.updated` (`{action_id}:{status}`) |
+| **§7 — схема БД** | `001_init.sql` + `002_alerts_family_poa_watch.sql` (unique с `citizen_id`, `alerts.buttons`, `poa_watch`) | таблицы `alerts, actions, telegram_links, link_tokens, consents, invite_codes` |
+| **§8 — REST** | ✅ `GET /guard/alerts` (курсор, сначала открытые и важные), `POST /alerts/{id}/verdict` (+аудит), `GET /documents/{id}/alerts`; остальное — заглушки | действия, черновики, Telegram, семья |
+| **§9 — события** | ✅ `alert.created` (`{event_id}:{rule_id}`, у копий G7 — `…:{grantee}`) | `action.updated` (`{action_id}:{status}`); `status_changed → revoked` закрывает действие в `verifying` — в шаге 3 |
 
 ### §12 Definition of Done — чек-лист (всё бэкенд/интеграция, пока не закрыто)
 - [ ] Новая e-доверенность → тревога в Telegram ≤ 5 с.
@@ -66,10 +66,16 @@
 ## Рекомендуемый порядок (с чего продолжить)
 
 1. ~~**Правила G1–G7 + тесты**~~ ✅ — самодостаточно, не нужны ни Telegram, ни браузер. Закрывает строку DoD «каждое правило покрыто тестом».
-2. **Потребитель событий + публикация** (`worker.py`, `alert.created`) — тревоги начинают появляться в `/alerts`.
+2. ~~**Потребитель событий + публикация**~~ ✅ (`worker.py`, `alert.created`) — тревоги начинают появляться в `/alerts`.
 3. **Машина действий + код + идемпотентность** (`domain/actions.py`, `api.py`) — оживает модалка и `/actions/[id]`.
 4. **Telegram-бот** (привязка, тревоги, кнопки с HMAC, код).
 5. **Исполнитель `revoke_car_poa`** (сессия, скриншот, проверка через источник) — последний, нужен живой аккаунт/HAR (см. §13 открытые вопросы).
+
+## Интеграционные тесты без Docker
+
+Нужен Postgres с миграциями на :5433 (`make db`). Если Docker нет, а в системе нет pgvector: локальный кластер
+PG18 + пустая заглушка расширения `vector` через `extension_control_path`, миграции без `assistant/` — для guard хватает.
+Ключи `MASTER_KEY` и др. — любые 32 байта base64 в env.
 
 ## Как запустить / проверить фронтенд
 ```bash
