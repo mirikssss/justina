@@ -2,11 +2,11 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
-from storozh.shared.auth import current_citizen
+from storozh.shared.auth import Citizen, current_citizen
 
 router = APIRouter(prefix="/assist", tags=["assistant"], dependencies=[Depends(current_citizen)])
 
@@ -34,6 +34,19 @@ async def chat(body: ChatIn):
 @router.get("/chat/{document_id}")
 async def chat_history(document_id: UUID):
     raise NotImplementedError("GET /assist/chat/{document_id}")
+
+
+@router.get("/drafts/{draft_id}")
+async def draft_pdf(draft_id: UUID, citizen: Citizen = Depends(current_citizen)):
+    """PDF черновика заявления (ст. 31 или иск); только владельцу."""
+    from storozh.assistant.drafts import service as drafts
+
+    found = await drafts.get_pdf(draft_id, citizen.id)
+    if found is None:
+        raise HTTPException(status_code=404, detail="draft not found")
+    draft_type, pdf = found
+    return Response(pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{draft_type}-{draft_id}.pdf"'})
 
 
 @router.get("/search")

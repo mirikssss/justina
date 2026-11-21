@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 22mm 20mm 20mm 25mm; }
+  body { font-family: "DejaVu Serif", "Times New Roman", serif; font-size: 12pt; line-height: 1.45; color: #000; }
+  .to { margin-left: 50%; margin-bottom: 18pt; }
+  .to p { margin: 0 0 3pt; text-indent: 0; text-align: left; }
+  h1 { text-align: center; font-size: 13pt; margin: 18pt 0 4pt; text-transform: uppercase; }
+  .sub { text-align: center; font-size: 11pt; margin: 0 0 16pt; }
+  p { text-align: justify; margin: 0 0 8pt; text-indent: 1.25cm; }
+  p.noindent { text-indent: 0; }
+  ol { margin: 0 0 8pt 1.25cm; padding: 0; }
+  .sign { margin-top: 28pt; display: flex; justify-content: space-between; }
+  .blank { display: inline-block; min-width: 45mm; border-bottom: 0.6pt solid #000; }
+  .note { margin-top: 30pt; font-size: 8.5pt; color: #555; text-indent: 0; border-top: 0.5pt solid #999; padding-top: 4pt; }
+</style>
+</head>
+<body>
+{% block body %}{% endblock %}
+<p class="note">{% if lang == "uz" %}Qoralama «Bitimlar qo‘riqchisi» tomonidan tayyorlangan. Imzolashdan oldin ma’lumotlarni tekshiring; yurist bilan maslahatlashish tavsiya etiladi.{% else %}Черновик подготовлен модулем «Сторож сделок». Перед подписанием проверьте данные; рекомендуется консультация юриста.{% endif %}</p>
+</body>
+</html>
