@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { Badge, Icon, toast, type IconName } from "@/components/mygov";
-import type { Schemas } from "@/lib/api/client";
+import { API_BASE, type Schemas } from "@/lib/api/client";
 import { useLocale, useT } from "@/lib/i18n";
 
 import { ConfirmModal } from "./ConfirmModal";
@@ -52,7 +52,11 @@ export function DocumentGuard({ documentId, status }: { documentId: string; stat
     try {
       const { url } = await createDraft(documentId, type);
       toast(t("Ariza qoralamasi tayyor"), "good");
-      window.open(url, "_blank", "noopener");
+      // url относительно API (/assist/drafts/{id}); окно после await режет блокировщик — тогда в этой вкладке
+      const href = url.startsWith("/") ? `${API_BASE}${url}` : url;
+      const w = window.open(href, "_blank");
+      if (w) w.opener = null;
+      else window.location.href = href;
     } catch {
       toast(t("Qoralamani yaratib bo'lmadi"), "crit");
     } finally {

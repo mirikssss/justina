@@ -95,3 +95,42 @@ async def citizen_profile(citizen_id: UUID) -> dict | None:
         return None
     pinfl = crypto.decrypt(citizen_id, row["pinfl_enc"]).decode() if row["pinfl_enc"] else None
     return {"display_name": row["display_name"], "lang": row["lang"], "pinfl": pinfl}
+
+
+# --- T9: согласие на обработку и удаление данных (ЗРУ-547) ---------------------------------------------
+
+CONSENT_VERSION = "2026-11-21"
+CONSENT_SCOPES = ["read_cabinets", "store_encrypted", "notify_telegram", "ai_explanations"]
+
+
+async def get_consent(citizen_id: UUID) -> dict:
+    async with db.connect("platform") as conn:
+        row = await repo.current_consent(conn, citizen_id)
+    accepted = row is not None and row["version"] == CONSENT_VERSION
+    return {"version": CONSENT_VERSION, "scopes": CONSENT_SCOPES, "accepted": accepted,
+            "accepted_at": row["accepted_at"] if accepted else None}
+
+
+async def accept_consent(citizen_id: UUID, version: str) -> dict:
+    if version != CONSENT_VERSION:
+        raise ValueError("consent version is outdated")
+    async with db.connect("platform") as conn:
+        row = await repo.add_consent(conn, citizen_id, version, CONSENT_SCOPES)
+        await audit.write(conn, actor=f"citizen:{citizen_id}", action="consent.accepted",
+                          target=f"consent:{version}")
+    return {"version": row["version"], "scopes": list(row["scopes"]), "accepted": True,
+            "accepted_at": row["accepted_at"]}
+
+
+async def delete_my_data(citizen_id: UUID) -> None:
+    """Криптоудаление: ключ данных стёрт, сессии и привязка Telegram сняты, согласие отозвано, факт — в аудите.
+
+    Маски и HMAC в карточках остаются (персональных данных в них нет), всё зашифрованное — нечитаемо:
+    сессии OneID, сырые данные источников, ПИНФЛ, chat_id, скриншоты, PDF-заявления.
+    """
+    await guard.forget_citizen(citizen_id)
+    crypto.destroy_key(citizen_id)
+    async with db.connect("platform") as conn:
+        await repo.withdraw_consents(conn, citizen_id)
+        await repo.revoke_all_sessions(conn, citizen_id)
+        await audit.write(conn, actor=f"citizen:{citizen_id}", action="data.deleted", target=f"citizen:{citizen_id}")

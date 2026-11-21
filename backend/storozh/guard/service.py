@@ -555,3 +555,19 @@ async def notify_event(event: Event, conn: AsyncConnection) -> None:
                 log.exception("alert edit failed", extra={"alert_id": str(alert["id"])})
     await repo.set_alert_delivery(conn, alert["id"], tg_message_id=message_id, explanation=explanation,
                                   sent_at=sent_at)
+
+
+# --- FR-G-12: заявление по ст. 31 и иск (T12) ----------------------------------------------------------
+
+DRAFT_TYPES = ("art31_postpone", "court_claim")
+
+
+async def create_draft(citizen_id: UUID, document_id: UUID, type: str) -> dict[str, Any]:
+    """PDF-черновик через assistant.draft_application. ФИО и ПИНФЛ попадают только в PDF, не в модель.
+
+    LookupError — документ не найден или чужой (assistant проверяет владельца).
+    """
+    if type not in DRAFT_TYPES:
+        raise ActionError(422, f"draft type {type!r} is not allowed")
+    ref = await assistant.draft_application(type, document_id, citizen_id)  # LookupError -> 404; аудит пишет assistant
+    return {"draft_id": ref.draft_id, "url": ref.url}

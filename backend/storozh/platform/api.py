@@ -3,9 +3,10 @@
 import asyncio
 import json
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
 from psycopg import AsyncConnection
+from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
 from storozh.platform import service
@@ -66,6 +67,32 @@ async def _events_after(conn: AsyncConnection, citizen_id, last_seq: int) -> lis
         (last_seq, citizen_id, sorted(STREAM_TYPES)),
     )
     return await cur.fetchall()
+
+
+class ConsentIn(BaseModel):
+    version: str
+
+
+@router.get("/me/consent")
+async def my_consent(citizen: Citizen = Depends(current_citizen)):
+    return await service.get_consent(citizen.id)
+
+
+@router.post("/me/consent")
+async def accept_my_consent(body: ConsentIn, citizen: Citizen = Depends(current_citizen)):
+    try:
+        return await service.accept_consent(citizen.id, body.version)
+    except ValueError as e:
+        raise HTTPException(409, str(e)) from e
+
+
+@router.delete("/me/data", status_code=204)
+async def delete_my_data(citizen: Citizen = Depends(current_citizen)):
+    """T9: криптоудаление данных гражданина и выход со всех устройств."""
+    await service.delete_my_data(citizen.id)
+    resp = Response(status_code=204)
+    resp.delete_cookie(SESSION_COOKIE, path="/", secure=True, httponly=True, samesite="strict")
+    return resp
 
 
 @router.get("/stream")

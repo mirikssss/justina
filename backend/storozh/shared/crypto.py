@@ -91,6 +91,19 @@ def forget_cached_keys() -> None:
         _cache.clear()
 
 
+def destroy_key(citizen_id: UUID) -> bool:
+    """T9, криптоудаление: ключ данных гражданина стирается — всё, что им зашифровано, больше не прочитать.
+
+    Следующий encrypt для этого гражданина создаст новый ключ: новые данные читаемы, старые — нет.
+    """
+    with _lock:
+        _cache.pop(citizen_id, None)
+    with psycopg.connect(settings.database_url, autocommit=True) as conn:
+        conn.execute("SET ROLE storozh_shared")
+        cur = conn.execute("DELETE FROM shared.data_keys WHERE citizen_id = %s", (citizen_id,))
+        return cur.rowcount > 0
+
+
 # --------------------------------------------------------------------------- данные
 
 

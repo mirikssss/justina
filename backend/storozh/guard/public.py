@@ -4,7 +4,7 @@ from uuid import UUID
 
 from storozh.shared import crypto, db
 
-__all__ = ["citizen_by_chat"]
+__all__ = ["citizen_by_chat", "forget_citizen"]
 
 
 async def citizen_by_chat(chat_id: int) -> UUID | None:
@@ -14,3 +14,10 @@ async def citizen_by_chat(chat_id: int) -> UUID | None:
                                  (crypto.hmac_chat_id(chat_id),))
         row = await cur.fetchone()
     return row["citizen_id"] if row else None
+
+
+async def forget_citizen(citizen_id: UUID) -> None:
+    """T9: «Удалить мои данные» — снять привязку Telegram: тревоги и коды больше никуда не уходят."""
+    async with db.connect("guard") as conn:
+        await conn.execute("DELETE FROM telegram_links WHERE citizen_id = %s", (citizen_id,))
+        await conn.execute("DELETE FROM link_tokens WHERE citizen_id = %s", (citizen_id,))

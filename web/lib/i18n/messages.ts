@@ -288,6 +288,26 @@ export const RU: Record<string, string> = {
   "Javob olishning imkoni bo‘lmadi. Qayta urinib ko‘ring.": "Не удалось получить ответ. Попробуйте ещё раз.",
   "Telegram orqali kirish": "Войти через Telegram",
   "Telegramni ulash": "Подключить Telegram",
+  "Ma'lumotlarni qayta ishlashga rozilik": "Согласие на обработку данных",
+  "Rad etish va chiqish": "Отказаться и выйти",
+  "Roziman": "Согласен",
+  "Xizmat ishlashi uchun quyidagilarga ruxsatingiz kerak:": "Для работы сервиса нужно ваше разрешение на:",
+  "Kabinetlaringizdagi hujjatlarni sizning sessiyangiz bilan o'qish (MyGov, soliq, Vakolat)":
+    "Чтение документов из ваших кабинетов вашей сессией (MyGov, налоговая, Vakolat)",
+  "Ma'lumotlarni shaxsiy kalit bilan shifrlangan holda saqlash; kartochkalarda faqat niqoblar":
+    "Хранение данных в зашифрованном виде личным ключом; в карточках — только маски",
+  "Ogohlantirish va tasdiqlash kodlarini ulangan Telegramga yuborish":
+    "Отправку тревог и кодов подтверждения в подключённый Telegram",
+  "AI tushuntirishlari — shaxsiy ma'lumotlarsiz (ism, JSHSHIR, telefon yashiriladi)":
+    "Объяснения ИИ — без персональных данных (ФИО, ПИНФЛ, телефон скрываются)",
+  "Rozilikni istalgan vaqtda qaytarib olishingiz mumkin: «Ma'lumotlarimni o'chirish» shifrlash kalitini o'chiradi va saqlangan ma'lumotlar o'qib bo'lmaydigan bo'ladi.":
+    "Согласие можно отозвать в любой момент: «Удалить мои данные» стирает ключ шифрования, и сохранённые данные становятся нечитаемыми.",
+  "Ma'lumotlarimni o'chirish": "Удалить мои данные",
+  "Ma'lumotlaringiz o'chirilsinmi?": "Удалить ваши данные?",
+  "Ha, o'chirish": "Да, удалить",
+  "O'chirib bo'lmadi, qaytadan urinib ko'ring": "Не удалось удалить, попробуйте ещё раз",
+  "Shifrlash kalitingiz o'chiriladi: kabinet sessiyalari, hujjatlarning asl ma'lumotlari, Telegram va skrinshotlar o'qib bo'lmaydigan bo'ladi. Barcha qurilmalardan chiqasiz. Buni qaytarib bo'lmaydi.":
+    "Ваш ключ шифрования будет удалён: сессии кабинетов, исходные данные документов, Telegram и скриншоты станут нечитаемыми. Вы выйдете со всех устройств. Это нельзя отменить.",
   "Hodisadan Telegramgacha": "От события до Telegram",
   "Telegramga {n} s da": "в Telegram за {n} с",
   "Tasdiqlashdan natijagacha: {n} s": "От подтверждения до результата: {n} с",
