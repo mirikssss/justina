@@ -8,7 +8,7 @@ import type { Schemas } from "@/lib/api/client";
 import { useLocale, useT } from "@/lib/i18n";
 
 import { ALERT_STATUS, RULE, SEVERITY, fmtAgo } from "./labels";
-import { useAlerts, useAlertsLive, useSetVerdict } from "./queries";
+import { useAlerts, useAlertsLive, useSetVerdict, useTelegramLink } from "./queries";
 
 // FR-G-14: список тревог по важности, кнопки «Это я» / «Это не я». Живёт на alert.created (NFR-G-01).
 type Filter = "all" | Schemas["AlertStatus"];
@@ -29,7 +29,11 @@ export function AlertsPage() {
 
   return (
     <>
-      <PageHeader title={t("Ogohlantirishlar")} subtitle={t("Hujjatlaringizdagi o'zgarishlar — eng muhimidan boshlab")} />
+      <PageHeader
+        title={t("Ogohlantirishlar")}
+        subtitle={t("Hujjatlaringizdagi o'zgarishlar — eng muhimidan boshlab")}
+        actions={<TelegramLinkButton />}
+      />
       <Chips value={filter} options={filters} onChange={setFilter} />
       {alerts.isLoading ? (
         <Skeleton rows={3} />
@@ -41,6 +45,29 @@ export function AlertsPage() {
         </div>
       )}
     </>
+  );
+}
+
+// UC-G5: ссылка t.me/<bot>?start=link_<token> (10 минут) — после неё тревоги и коды приходят в Telegram.
+function TelegramLinkButton() {
+  const t = useT();
+  const link = useTelegramLink();
+  const open = () =>
+    link.mutate(undefined, {
+      onSuccess: (r) => {
+        // окно после await часто режет блокировщик всплывающих окон — тогда открываем в этой вкладке
+        // ("noopener" в window.open всегда даёт null, поэтому opener обнуляем сами)
+        const w = window.open(r.deep_link, "_blank");
+        if (w) w.opener = null;
+        else window.location.href = r.deep_link;
+        toast(t("Botda «Start»ni bosing — havola 10 daqiqa amal qiladi"), "info");
+      },
+      onError: () => toast(t("Havolani olib bo'lmadi. Qayta urinib ko'ring."), "crit"),
+    });
+  return (
+    <Button variant="ghost" disabled={link.isPending} onClick={open}>
+      <Icon name="send" size={16} /> {t("Telegramni ulash")}
+    </Button>
   );
 }
 

@@ -6,7 +6,15 @@ import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from storozh.guard.service import TOPICS, daily_check, handle_event, run_next_action, sweep_actions
+from storozh.guard.service import (
+    NOTIFY_TOPICS,
+    TOPICS,
+    daily_check,
+    handle_event,
+    notify_event,
+    run_next_action,
+    sweep_actions,
+)
 from storozh.shared import outbox
 
 log = logging.getLogger(__name__)
@@ -44,4 +52,10 @@ async def _actions_loop() -> None:
 
 
 async def run() -> None:
-    await asyncio.gather(outbox.consume("guard", TOPICS, handle_event), _daily_loop(), _actions_loop())
+    await asyncio.gather(
+        outbox.consume("guard", TOPICS, handle_event),
+        # отдельный курсор: медленный Telegram или ИИ не задерживают правила и наоборот
+        outbox.consume("guard", NOTIFY_TOPICS, notify_event, name="guard.notify"),
+        _daily_loop(),
+        _actions_loop(),
+    )

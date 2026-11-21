@@ -195,3 +195,56 @@ async def latest_alert_id(conn: AsyncConnection, citizen_id: UUID, document_id: 
 async def has_telegram_link(conn: AsyncConnection, citizen_id: UUID) -> bool:
     cur = await conn.execute("SELECT 1 FROM telegram_links WHERE citizen_id = %s", (citizen_id,))
     return await cur.fetchone() is not None
+
+
+# --- Telegram ---------------------------------------------------------------------------------------
+
+async def telegram_link(conn: AsyncConnection, citizen_id: UUID) -> dict[str, Any] | None:
+    cur = await conn.execute("SELECT * FROM telegram_links WHERE citizen_id = %s", (citizen_id,))
+    return await cur.fetchone()
+
+
+async def telegram_link_by_chat(conn: AsyncConnection, chat_id_hmac: str) -> dict[str, Any] | None:
+    cur = await conn.execute("SELECT * FROM telegram_links WHERE chat_id_hmac = %s", (chat_id_hmac,))
+    return await cur.fetchone()
+
+
+async def insert_link_token(conn: AsyncConnection, token_hash: str, citizen_id: UUID, expires_at) -> None:
+    await conn.execute("INSERT INTO link_tokens (token_hash, citizen_id, expires_at) VALUES (%s, %s, %s)",
+                       (token_hash, citizen_id, expires_at))
+
+
+async def use_link_token(conn: AsyncConnection, token_hash: str) -> UUID | None:
+    """Одноразовый токен привязки: None — нет, истёк или уже использован."""
+    cur = await conn.execute(
+        """UPDATE link_tokens SET used_at = now()
+           WHERE token_hash = %s AND used_at IS NULL AND expires_at > now() RETURNING citizen_id""",
+        (token_hash,),
+    )
+    row = await cur.fetchone()
+    return row["citizen_id"] if row else None
+
+
+async def upsert_telegram_link(conn: AsyncConnection, citizen_id: UUID, chat_id_enc: bytes, chat_id_hmac: str) -> None:
+    """Гражданин переподключает Telegram — старый чат заменяется новым."""
+    await conn.execute(
+        """INSERT INTO telegram_links (citizen_id, chat_id_enc, chat_id_hmac) VALUES (%s, %s, %s)
+           ON CONFLICT (citizen_id) DO UPDATE
+           SET chat_id_enc = EXCLUDED.chat_id_enc, chat_id_hmac = EXCLUDED.chat_id_hmac, linked_at = now()""",
+        (citizen_id, chat_id_enc, chat_id_hmac),
+    )
+
+
+async def get_alert(conn: AsyncConnection, alert_id: UUID, *, for_update: bool = False) -> dict[str, Any] | None:
+    cur = await conn.execute("SELECT * FROM alerts WHERE id = %s" + (" FOR UPDATE" if for_update else ""),
+                             (alert_id,))
+    return await cur.fetchone()
+
+
+async def set_alert_delivery(conn: AsyncConnection, alert_id: UUID, *, tg_message_id: str | None,
+                             explanation: str | None) -> None:
+    await conn.execute(
+        """UPDATE alerts SET tg_message_id = COALESCE(%s, tg_message_id),
+                             explanation = COALESCE(%s, explanation) WHERE id = %s""",
+        (tg_message_id, explanation, alert_id),
+    )

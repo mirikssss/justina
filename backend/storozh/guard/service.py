@@ -5,6 +5,7 @@ import base64
 import hashlib
 import hmac
 import logging
+import secrets
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid5
@@ -33,7 +34,8 @@ from storozh.guard.domain.actions import (
 from storozh.guard.domain.rules import DAILY_CHECK, RuleContext, evaluate
 from storozh.guard.domain.rules.base import POA_KINDS
 from storozh.guard.domain.rules.g4_poa_expiring import WINDOW_DAYS
-from storozh.guard.ports import ActionRequest, ActionResult
+from storozh.guard.ports import ActionRequest, ActionResult, AlertView, NotLinked
+from storozh.platform import public as platform
 from storozh.shared import audit, crypto, db, outbox
 from storozh.shared.config import settings
 from storozh.shared.contracts import DocumentKind, NormalizedDocument
@@ -43,7 +45,9 @@ log = logging.getLogger(__name__)
 
 TOPICS = {"document.created", "document.changed", "document.status_changed", "document.disappeared",
           "source.session_expired", "alert.created"}
-EXPLAIN_TIMEOUT_S = 5.0  # FR-G-04: тревога не ждёт ИИ дольше 5 с
+EXPLAIN_TIMEOUT_S = 5.0  # FR-G-04: объяснение ИИ — не дольше 5 с
+EXPLAIN_WAIT_S = 3.0  # столько ждём объяснения перед отправкой, чтобы тревога ушла ≤ 5 с (NFR-G-01)
+LINK_TTL = timedelta(minutes=10)
 _DAILY_NS = uuid5(NAMESPACE_URL, "storozh:guard:daily_check")
 
 
@@ -63,9 +67,9 @@ async def _raise_alerts(conn: AsyncConnection, event: Event, doc: NormalizedDocu
     citizen_id = citizen_id or event.citizen_id
     created = 0
     for draft in evaluate(event, doc, ctx):
-        explanation = await _explain(draft.rule_id, doc)
+        # объяснение не ждём: его досчитывает потребитель уведомлений (notify_event), FR-G-04
         alert_id = await repo.insert_alert(conn, event_id=event.id, citizen_id=citizen_id, document_id=document_id,
-                                           draft=draft, explanation=explanation)
+                                           draft=draft, explanation=None)
         if alert_id is None:
             continue  # повтор события
         # G7 даёт несколько копий на одно событие — в ключ входит получатель
@@ -268,7 +272,7 @@ async def create_action(citizen_id: UUID, document_id: UUID, type: str, idempote
         view = await action_view(conn, row)
     # Код — после коммита: в Telegram не уйдёт код от действия, которого нет в базе.
     try:
-        await notifier.send_code(citizen_id, code)
+        await notifier.send_code(citizen_id, code, type)
     except Exception as e:
         log.exception("confirmation code not delivered", extra={"action_id": str(row["id"])})
         async with db.connect("guard") as conn:
@@ -404,3 +408,119 @@ async def _close_verified_actions(conn: AsyncConnection, event: Event, document_
     for row in await repo.verifying_actions(conn, document_id):
         await _transition(conn, row, ActionStatus.done, actor=SYSTEM,
                           result={"verified_status": "revoked", "error": None})
+
+
+# --- Telegram: привязка, ответы на кнопки, уведомления (FR-G-05, UC-G1, UC-G5) ------------------------
+
+def _token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+async def create_telegram_link(citizen_id: UUID) -> str:
+    """UC-G5: ссылка t.me/<bot>?start=link_<token>, одноразовая, 10 минут. В базе — только хеш токена."""
+    token = secrets.token_urlsafe(24)
+    async with db.connect("guard") as conn:
+        await repo.insert_link_token(conn, _token_hash(token), citizen_id, datetime.now(UTC) + LINK_TTL)
+    return f"https://t.me/{settings.telegram_bot_username or 'storozh_bot'}?start=link_{token}"
+
+
+class _Taken(Exception):
+    pass
+
+
+async def link_chat(token: str, chat_id: int) -> tuple[str, UUID | None]:
+    """Бот получил /start link_<token>. ("ok" | "bad" | "taken", гражданин)."""
+    chat_hmac = crypto.hmac_chat_id(chat_id)
+    try:
+        async with db.connect("guard") as conn:
+            citizen_id = await repo.use_link_token(conn, _token_hash(token))
+            if citizen_id is None:
+                return "bad", None
+            other = await repo.telegram_link_by_chat(conn, chat_hmac)
+            if other is not None and other["citizen_id"] != citizen_id:
+                raise _Taken  # откат: токен остаётся неиспользованным
+            await repo.upsert_telegram_link(conn, citizen_id, crypto.encrypt(citizen_id, str(chat_id).encode()),
+                                            chat_hmac)
+            await audit.write(conn, actor=f"citizen:{citizen_id}", action="telegram.linked",
+                              target=f"citizen:{citizen_id}")
+    except _Taken:
+        return "taken", None
+    return "ok", citizen_id
+
+
+def _alert_url(rule_id: str, document_id: UUID | None) -> str:
+    if rule_id == "G6":
+        path = "/sources"
+    elif rule_id == "G7" or document_id is None:
+        path = "/alerts"  # копия родственнику: документ чужой, открываем ленту тревог
+    else:
+        path = f"/documents/{document_id}"
+    return settings.public_web_url.rstrip("/") + path
+
+
+def alert_view(alert: dict[str, Any], doc: NormalizedDocument | None, lang: str,
+               explanation: str | None = None) -> AlertView:
+    obj = doc.object.id_masked if doc is not None and doc.object is not None and alert["rule_id"] != "G7" else None
+    return AlertView(alert_id=alert["id"], rule_id=alert["rule_id"], severity=alert["severity"],
+                     title=alert["title"], explanation=explanation or alert["explanation"],
+                     buttons=tuple(alert["buttons"] or ()), lang=lang,
+                     url=_alert_url(alert["rule_id"], alert["document_id"]), object_masked=obj)
+
+
+async def telegram_verdict(chat_id: int, alert_id: UUID, verdict: str) -> AlertView | None:
+    """Кнопка «Это я / Это не я». None — тревога не найдена или чат не тот, к которому она ушла (FR-G-05)."""
+    async with db.connect("guard") as conn:
+        alert = await repo.get_alert(conn, alert_id)
+        link = await repo.telegram_link(conn, alert["citizen_id"]) if alert else None
+    if alert is None or link is None or not hmac.compare_digest(link["chat_id_hmac"], crypto.hmac_chat_id(chat_id)):
+        return None
+    updated = await set_verdict(alert["citizen_id"], alert_id, verdict)
+    if updated is None:
+        return None
+    doc = await _load_document(alert["document_id"])
+    return alert_view({**alert, **updated}, doc, await platform.citizen_lang(alert["citizen_id"]))
+
+
+NOTIFY_TOPICS = {"alert.created", "action.updated"}
+
+
+async def notify_event(event: Event, conn: AsyncConnection) -> None:
+    """Потребитель guard.notify: тревога в Telegram ≤ 5 с с шаблоном, объяснение — правкой сообщения (UC-G1)."""
+    notifier = get_notifier()
+    if event.type == "action.updated":
+        if event.data.get("status") in ("done", "failed"):
+            try:
+                await notifier.send_action_update(event.citizen_id, event.data["type"], event.data["status"])
+            except NotLinked:
+                pass
+            except Exception:
+                log.exception("action update not delivered", extra={"action_id": event.data.get("action_id")})
+        return
+
+    alert = await repo.get_alert(conn, UUID(event.data["alert_id"]), for_update=True)
+    if alert is None or alert["tg_message_id"] is not None:
+        return  # повтор события: сообщение уже ушло
+    doc = await _load_document(alert["document_id"]) if alert["rule_id"] != "G7" else None
+    lang = await platform.citizen_lang(alert["citizen_id"])
+    task = asyncio.create_task(_explain(alert["rule_id"], doc, lang)) if doc is not None else None
+    explanation = None
+    if task is not None:
+        done, _ = await asyncio.wait({task}, timeout=EXPLAIN_WAIT_S)
+        explanation = task.result() if done else None
+
+    message_id = None
+    try:
+        message_id = await notifier.send_alert(alert["citizen_id"], alert_view(alert, doc, lang, explanation))
+    except NotLinked:
+        pass
+    except Exception:
+        log.exception("alert not delivered", extra={"alert_id": str(alert["id"])})
+
+    if task is not None and explanation is None:  # не успело: дописываем правкой сообщения
+        explanation = await task
+        if explanation and message_id:
+            try:
+                await notifier.edit_alert(alert["citizen_id"], message_id, alert_view(alert, doc, lang, explanation))
+            except Exception:
+                log.exception("alert edit failed", extra={"alert_id": str(alert["id"])})
+    await repo.set_alert_delivery(conn, alert["id"], tg_message_id=message_id, explanation=explanation)

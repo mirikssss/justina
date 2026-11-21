@@ -1,6 +1,5 @@
 """DoD «Сторожа», шаг 2: событие -> тревога -> alert.created на живой базе (FR-G-01, FR-G-04, NFR-G-03)."""
 
-import asyncio
 import json
 import uuid
 from datetime import UTC, date, datetime, timedelta
@@ -65,23 +64,11 @@ async def test_new_poa_raises_one_g1_alert_and_publishes_alert_created():
 
     [alert] = await _alerts(citizen)
     assert alert["rule_id"] == "G1" and alert["severity"] == "critical"
-    assert alert["explanation"] == "explained G1" and alert["buttons"] == ["not_me_revoke", "me"]
+    assert alert["explanation"] is None  # правила ИИ не ждут: объяснение дописывает guard.notify
+    assert alert["buttons"] == ["not_me_revoke", "me"]
     [published] = await _events(citizen, {"alert.created"})
     assert published.data["rule_id"] == "G1" and published.data["document_id"] == str(alert["document_id"])
     assert published.dedupe_key.endswith(":G1")
-
-
-async def test_alert_does_not_wait_for_slow_explanation(monkeypatch):
-    async def slow(rule_id, doc, lang):
-        await asyncio.sleep(10)
-
-    monkeypatch.setattr(service.assistant, "explain_alert", slow)
-    monkeypatch.setattr(service, "EXPLAIN_TIMEOUT_S", 0.1)
-    citizen = uuid.uuid4()
-    await _ingest(citizen, _doc())
-    await _handle_all(citizen)
-    [alert] = await _alerts(citizen)
-    assert alert["rule_id"] == "G1" and alert["explanation"] is None  # шаблон вместо объяснения
 
 
 async def test_status_change_raises_g3():
