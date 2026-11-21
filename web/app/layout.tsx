@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 
 import "./globals.css";
+import { LANG_COOKIE, parseLang } from "@/lib/lang";
+
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
@@ -9,9 +12,11 @@ export const metadata: Metadata = {
   description: "Сторож сделок: все документы на ваше имя из госреестров",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Язык интерфейса из cookie (по умолчанию узбекский) — страница сразу рендерится на нём, без мигания.
+  const lang = parseLang((await cookies()).get(LANG_COOKIE)?.value);
   return (
-    <html lang="uz">
+    <html lang={lang}>
       <head>
         {/* Шрифт портала — Montserrat (500/600/700) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,7 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <Providers lang={lang}>{children}</Providers>
       </body>
     </html>
   );
