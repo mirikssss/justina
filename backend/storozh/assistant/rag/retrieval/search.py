@@ -146,3 +146,12 @@ def search(query: str, k: int = 8, rerank: bool | None = None, expand: bool = Tr
         for h in hits:
             h.related = [_to_hit(r, via={"ref"}) for r in by_src.get(h.article_id, [])][:5]
     return hits
+
+
+def in_lang(hits: list[Hit], lang: str) -> list[Hit]:
+    """Те же статьи в версии на языке ответа, если она есть (регламенты № 613/726 есть только на узбекском)."""
+    want = [(h.code, h.number) for h in hits if h.lang != lang]
+    if not want:
+        return hits
+    other = {(a["code"], a["number"]): a for a in corpus.articles_by_keys(want) if a["lang"] == lang}
+    return [_to_hit(other[(h.code, h.number)], h.score, h.via) if (h.code, h.number) in other else h for h in hits]
