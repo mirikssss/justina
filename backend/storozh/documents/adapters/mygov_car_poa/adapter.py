@@ -8,6 +8,7 @@ import re
 from datetime import date, datetime
 
 from lxml import html as lxml_html
+from playwright.async_api import TimeoutError as PlaywrightTimeout
 
 from storozh.documents.adapters import browser
 from storozh.documents.adapters.mygov_car_poa import selectors as sel
@@ -20,6 +21,7 @@ _STATUS = [  # (подстрока текста статуса в нижнем �
     ("bekor", "revoked"), ("аннулир", "revoked"), ("отозв", "revoked"),
     ("muddati", "expired"), ("истек", "expired"), ("истёк", "expired"),
     ("faol", "active"), ("amalda", "active"), ("действ", "active"),
+    ("обработано", "active"),  # заявка на выдачу исполнена; отзыв здесь не виден — его ловит vakolat.check
 ]
 _ISSUED_BY_ME = ("выдан", "berilgan", "issued", "мной", "men")
 
@@ -42,18 +44,25 @@ def parse_date(text: str | None) -> date | None:
 
 
 def parse_list(page_html: str) -> list[RawRecord]:
-    """Разметка списка -> записи. Селекторы — в selectors.py."""
-    if not sel.ROW:
-        raise NotImplementedError("mygov.car_poa: заполнить selectors.py по HAR (Разработчик 1)")
+    """Карточки «Мои заявки» -> записи об e-доверенностях. Селекторы — в selectors.py."""
     tree = lxml_html.fromstring(page_html)
     out = []
     for row in tree.cssselect(sel.ROW):
+        href = row.get("href", "")
+        if href.endswith(sel.SKIP_HREF_SUFFIXES) or not href[len(sel.HREF_PREFIX):].strip("/").isdigit():
+            continue
         data = {}
         for key, css in sel.FIELDS.items():
-            found = row.cssselect(css) if css else []
+            found = row.cssselect(css)
             data[key] = found[0].text_content().strip() if found else None
-        if data.get("number"):
-            out.append(RawRecord(external_id=data["number"], data=data))
+        if sel.TITLE_MARK not in (data["title"] or "").lower():
+            continue
+        data["number"] = (data["number"] or "").lstrip("#").strip() or href[len(sel.HREF_PREFIX):].strip("/")
+        icon = row.cssselect(sel.DATE_ICON)
+        data["issued_at"] = icon[0].getparent().text_content().strip() if icon else None
+        data["direction"] = "Выдана мной"  # «Мои заявки» — только заявки самого человека
+        data["detail_url"] = "https://my.gov.uz" + href
+        out.append(RawRecord(external_id=data["number"], data=data))
     return out
 
 
@@ -65,9 +74,14 @@ class MyGovCarPoaAdapter:
 
     async def fetch(self, session: BrowserSession) -> list[RawRecord]:
         async with browser.page(session) as page:
-            await page.goto(sel.LIST_URL, wait_until="networkidle")
-            if sel.LOGGED_IN_MARK and not await page.query_selector(sel.LOGGED_IN_MARK):
+            await page.goto(sel.LIST_URL, wait_until="domcontentloaded")
+            try:  # список рисуется после того, как страница расшифровала ответ API
+                await page.wait_for_selector(sel.LIST_READY, timeout=15_000)
+            except PlaywrightTimeout:
+                raise browser.SessionExpired(self.source_id) from None
+            if sel.LOGIN_PATH in page.url or not await page.query_selector(sel.LOGGED_IN_MARK):
                 raise browser.SessionExpired(self.source_id)
+            await page.wait_for_load_state("networkidle")
             return parse_list(await page.content())
 
     def normalize(self, raw: RawRecord) -> NormalizedDocument:
@@ -94,5 +108,5 @@ class MyGovCarPoaAdapter:
             "valid_until": parse_date(d.get("valid_until")),
             "issuer": {"type": "mygov", "name": "my.gov.uz"},
             "fields": {"number_masked": mask_number(number)},
-            "source_ref": {"external_id": raw.external_id, "url": sel.LIST_URL},
+            "source_ref": {"external_id": raw.external_id, "url": d.get("detail_url") or sel.LIST_URL},
         })

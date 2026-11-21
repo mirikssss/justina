@@ -22,3 +22,18 @@ def test_status_texts():
     assert status_of("Аннулирована") == "revoked"
     assert status_of("Muddati o'tgan") == "expired"
     assert status_of("???") == "unknown"
+
+
+def test_parse_list_keeps_only_poa_cards():
+    from pathlib import Path
+
+    from storozh.documents.adapters.mygov_car_poa.adapter import parse_list
+
+    html = (Path(__file__).parent / "fixtures" / "requests_list.html").read_text(encoding="utf-8")
+    records = parse_list(html)
+    assert [r.external_id for r in records] == ["900000001"]
+    d = records[0].data
+    assert d["issued_at"] == "21.11.2026" and d["status_text"] == "Обработано"
+    doc = MyGovCarPoaAdapter().normalize(records[0])
+    assert doc.uri == "uz:notarius:poa:900000001"
+    assert doc.status == "active" and doc.owner_role == "principal" and doc.issued_at.isoformat() == "2026-11-21"
