@@ -55,7 +55,7 @@ class BirdarchaCompanyAdapter:
                 await page.wait_for_selector(sel.READY, timeout=20_000)
             except PlaywrightTimeout:
                 raise browser.SessionExpired(self.source_id) from None
-            await page.wait_for_load_state("networkidle")
+            await browser.settle(page)
             return parse_list(await page.content())
 
     def normalize(self, raw: RawRecord) -> NormalizedDocument:

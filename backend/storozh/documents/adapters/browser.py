@@ -92,3 +92,11 @@ async def close() -> None:
         await _browser.close()
         await _pw.stop()
         _browser = _pw = None
+
+
+async def settle(page: Page, timeout_ms: int = 8_000) -> None:
+    """Дождаться затишья сети, но не падать: на порталах фоном идёт аналитика и сеть «не успокаивается»."""
+    try:
+        await page.wait_for_load_state("networkidle", timeout=timeout_ms)
+    except Exception:  # noqa: BLE001 — таймаут не ошибка: содержимое мы уже ждали по селектору
+        pass

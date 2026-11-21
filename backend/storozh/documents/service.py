@@ -1,5 +1,6 @@
 """Сценарии «Документов»: приём снимков, версии, лента, источники, сессии. Снаружи — только через public.py."""
 
+import asyncio
 import base64
 import hashlib
 import json
@@ -307,10 +308,22 @@ async def active_citizens(provider: str = "oneid") -> list[UUID]:
         return [r["citizen_id"] for r in await cur.fetchall()]
 
 
+_process_locks: dict[tuple[UUID, str], asyncio.Lock] = {}
+
+
 class _SessionProvider:
     @asynccontextmanager
     async def get(self, citizen_id: UUID, provider: str = "oneid") -> AsyncIterator[BrowserSession]:
-        """Держит pg_advisory_lock на отдельном соединении, пока сессия в работе (опрос или действие)."""
+        """Держит pg_advisory_lock на отдельном соединении, пока сессия в работе (опрос или действие).
+
+        Внутри процесса очередь — asyncio.Lock: иначе десяток опросов разом занимает весь пул соединений, ожидая замка в БД.
+        """
+        async with _process_locks.setdefault((citizen_id, provider), asyncio.Lock()), \
+                self._locked(citizen_id, provider) as session:
+            yield session
+
+    @asynccontextmanager
+    async def _locked(self, citizen_id: UUID, provider: str) -> AsyncIterator[BrowserSession]:
         p = await db.pool("documents")
         async with p.connection() as conn:
             await conn.execute("SELECT pg_advisory_lock(%s)", (_lock_key(citizen_id, provider),))

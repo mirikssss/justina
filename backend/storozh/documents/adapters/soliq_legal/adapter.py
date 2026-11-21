@@ -67,7 +67,7 @@ async def _page_html(session: BrowserSession, slug: str, source_id: str, ready: 
             raise browser.SessionExpired(source_id) from None
         if sel.CABINET_MARK not in page.url:
             raise browser.SessionExpired(source_id)
-        await page.wait_for_load_state("networkidle")
+        await browser.settle(page)
         return await page.content()
 
 

@@ -110,7 +110,7 @@ class MyGovCarPoaAdapter:
                 await page.wait_for_selector(sel.CARD, timeout=15_000)
             except PlaywrightTimeout:
                 pass  # пустой список
-            await page.wait_for_load_state("networkidle")
+            await browser.settle(page)
             records = parse_list(await page.content())
             return [RawRecord(r.external_id, {**r.data, **await self._detail(page, base, r.data["detail_href"])})
                     for r in records]

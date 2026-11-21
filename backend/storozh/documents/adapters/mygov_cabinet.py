@@ -27,5 +27,5 @@ async def cabinet_html(session: BrowserSession, path: str, content_selector: str
             await page.wait_for_selector(content_selector, timeout=content_timeout_ms)
         except PlaywrightTimeout:
             pass  # пустой список: на странице нет карточек
-        await page.wait_for_load_state("networkidle")
+        await browser.settle(page)
         return await page.content()
