@@ -120,3 +120,23 @@ async def test_session_provider_serializes_access(monkeypatch):
     assert "source.session_expired" in await _events(citizen)
     statuses = {s["source_id"]: s["status"] for s in await service.list_sources(citizen)}
     assert set(statuses.values()) == {"expired"}
+
+
+async def test_raw_enc_written_and_decryptable():
+    """FR-D-06: сырые данные лежат в document_versions.raw_enc, расшифровываются ключом гражданина."""
+    from storozh.shared import crypto
+
+    citizen = uuid.uuid4()
+    doc = _doc()
+    snap = SourceSnapshot(snapshot_id=uuid.uuid4(), citizen_id=citizen, source="mygov.car_poa",
+                          fetched_at=datetime.now(UTC), complete=True, documents=[doc],
+                          raw={doc.uri: {"counterparty_name": "Каримов Бахтиёр", "pinfl": "12345678901234"}})
+    await service.ingest_snapshot(snap)
+    async with db.connect("documents") as conn:
+        cur = await conn.execute(
+            "SELECT v.raw_enc, v.payload FROM document_versions v JOIN documents d ON d.id = v.document_id "
+            "WHERE d.citizen_id = %s", (citizen,))
+        row = await cur.fetchone()
+    assert row["raw_enc"] is not None and b"12345678901234" not in bytes(row["raw_enc"])
+    assert json.loads(crypto.decrypt(citizen, row["raw_enc"]))["pinfl"] == "12345678901234"
+    assert "12345678901234" not in json.dumps(row["payload"])

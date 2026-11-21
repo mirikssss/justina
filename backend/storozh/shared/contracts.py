@@ -110,3 +110,5 @@ class SourceSnapshot(_Strict):
     fetched_at: datetime
     complete: bool  # True — в снимке весь список; только тогда пропажа записи = событие
     documents: list[NormalizedDocument]
+    # Сырые данные источника по URI документа: ПИНФЛ и ФИО целиком. В payload не попадают, ingest шифрует их в raw_enc.
+    raw: dict[str, dict[str, Any]] = {}
