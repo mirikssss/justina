@@ -34,14 +34,30 @@ def cyr_to_lat(s: str) -> str:
     return "".join(out)
 
 
+# Частые узбекские слова в кириллице без букв ў/қ/ғ/ҳ — по ним узбекская кириллица отличается от русского.
+_UZ_CYR_WORDS = {
+    "мен", "менинг", "сен", "сиз", "сизнинг", "биз", "бизнинг", "улар", "бу", "шу", "ва", "учун", "билан", "нима",
+    "нимани", "керак", "керакми", "мумкин", "мумкинми", "эмас", "агар", "лекин", "ёки", "бекор", "қилиш", "борми",
+    "йўқ", "нега", "қачон", "қаерда", "ишончнома", "ишончномани", "ҳужжат", "ҳужжатни", "бўйича",
+    "бераман", "берилган", "машинамни", "машинани", "қандай", "сотиши", "сотиш",
+}
+_UZ_CYR_SUFFIX = re.compile(r"[а-я](?:нинг|ларни|ларга|лардан|ми)\b")
+_CYR_WORD = re.compile(r"[а-яёўқғҳ]+")
+
+
 def detect_lang(s: str) -> str:
-    """ru | uz. Узбекская кириллица (ўғқҳ) или латиница с o'/g'/sh-маркерами -> uz."""
+    """ru | uz (по умолчанию uz). Узбекская кириллица — по буквам ўғқҳ, частым словам и суффиксам; латиница — uz."""
     low = norm_apostrophes(s.lower())
     if any(c in _UZ_ONLY_CYR for c in low):
         return "uz"
     cyr = sum("а" <= c <= "я" or c == "ё" for c in low)
     lat = sum("a" <= c <= "z" for c in low)
-    return "ru" if cyr > lat else "uz"
+    if cyr <= lat:
+        return "uz"
+    words = set(_CYR_WORD.findall(low))
+    if words & _UZ_CYR_WORDS or _UZ_CYR_SUFFIX.search(low):
+        return "uz"
+    return "ru"
 
 
 def to_uz_latin(s: str) -> str:

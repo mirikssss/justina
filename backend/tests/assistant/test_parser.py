@@ -71,3 +71,11 @@ def test_article_label():
 
     assert BY_CODE["reg726"].article_label("4-19") == "п. 19 прил. 4"
     assert BY_CODE["notary"].article_label("31", "uz") == "31-modda"
+
+
+def test_detect_lang_defaults_to_uzbek():
+    for uz in ("Мен бу ишончномани бекор қилишим керакми?", "Бу машинани сотиш мумкинми?",
+               "Ishonchnomani qanday bekor qilaman?", "", "12345"):
+        assert detect_lang(uz) == "uz", uz
+    for ru in ("Как отменить доверенность?", "Что Б может сделать с моей машиной?", "Можно ли продать машину?"):
+        assert detect_lang(ru) == "ru", ru

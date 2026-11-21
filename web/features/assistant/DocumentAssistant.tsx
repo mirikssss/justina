@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Card, Icon, Skeleton } from "@/components/mygov";
 import { API_BASE, api, type Schemas } from "@/lib/api/client";
+import { useI18n } from "@/lib/i18n";
 import { useStream } from "@/lib/stream";
 
 type Lang = Schemas["Lang"];
@@ -40,15 +41,8 @@ function Citations({ items, numbered = false }: { items: Citation[]; numbered?: 
   );
 }
 
-const T = {
-  uz: { title: "AI xulosa", pending: "Xulosa tayyorlanmoqda — bir necha soniya…", can: "Boshqa tomon nima qila oladi",
-        risks: "Xavflar", todo: "Nima qilish kerak", error: "Xulosani olishning imkoni bo‘lmadi" },
-  ru: { title: "AI-резюме", pending: "Готовим резюме — несколько секунд…", can: "Что может другая сторона",
-        risks: "Риски", todo: "Что делать", error: "Не удалось получить резюме" },
-} as const;
-
 export function AssistantSummary({ documentId }: { documentId: string }) {
-  const [lang, setLang] = useState<Lang>("uz");
+  const { lang, t } = useI18n(); // резюме — на языке интерфейса (по умолчанию узбекский)
   const qc = useQueryClient();
   const key = ["summary", documentId, lang];
   const summary = useQuery({
@@ -59,33 +53,24 @@ export function AssistantSummary({ documentId }: { documentId: string }) {
   useStream(["summary.ready"], (e) => {
     if (e.data.document_id === documentId) qc.invalidateQueries({ queryKey: ["summary", documentId] });
   });
-  const t = T[lang];
   const s = summary.data;
 
   return (
-    <Card title={t.title} icon="bolt" tag="AI • lex.uz RAG">
+    <Card title={t("ai.summary")} icon="bolt" tag="AI • lex.uz RAG">
       <div className="ai-sum" data-document-id={documentId}>
-        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-          {(["uz", "ru"] as const).map((l) => (
-            <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l}
-                    style={{ fontWeight: lang === l ? 700 : 400, opacity: lang === l ? 1 : 0.6 }}>
-              {l === "uz" ? "O‘zb" : "Рус"}
-            </button>
-          ))}
-        </div>
-        {summary.isError ? <p>{t.error}</p> : null}
+        {summary.isError ? <p>{t("ai.error")}</p> : null}
         {summary.isLoading || s === null ? (
           <>
-            <p>{t.pending}</p>
+            <p>{t("ai.pending")}</p>
             <Skeleton rows={2} />
           </>
         ) : null}
         {s ? (
           <>
             <p><b>{s.what_is_it}</b></p>
-            <Section title={t.can} items={s.counterparty_can} />
-            <Section title={t.risks} items={s.risks} />
-            <Section title={t.todo} items={s.what_to_do} />
+            <Section title={t("ai.can")} items={s.counterparty_can} />
+            <Section title={t("ai.risks")} items={s.risks} />
+            <Section title={t("ai.todo")} items={s.what_to_do} />
             <Citations items={s.citations} />
           </>
         ) : null}
@@ -133,6 +118,7 @@ async function readSse(body: ReadableStream<Uint8Array>, onEvent: (event: string
 type Live = { question: string; answer: string; citations: Citation[] } | null;
 
 export function AssistantChat({ documentId }: { documentId: string }) {
+  const { t } = useI18n(); // интерфейс чата — на языке сайта; ответ модели — на языке вопроса
   const qc = useQueryClient();
   const history = useQuery({
     queryKey: ["chat", documentId],
@@ -173,7 +159,7 @@ export function AssistantChat({ documentId }: { documentId: string }) {
       await qc.invalidateQueries({ queryKey: ["chat", documentId] });
       setLive(null);
     } catch {
-      setLive((l) => (l ? { ...l, answer: l.answer || "Javob olishning imkoni bo‘lmadi. Qayta urinib ko‘ring." } : l));
+      setLive((l) => (l ? { ...l, answer: l.answer || t("chat.error") } : l));
     } finally {
       setBusy(false);
     }
@@ -184,11 +170,11 @@ export function AssistantChat({ documentId }: { documentId: string }) {
     <div className="chat" data-document-id={documentId}>
       <div className="chat-h">
         <div className="ca"><Icon name="bolt" /></div>
-        <div><h3>AI yordamchi</h3><small>Ushbu hujjat bo&apos;yicha</small></div>
+        <div><h3>{t("chat.title")}</h3><small>{t("chat.sub")}</small></div>
         <span className="lv"><Icon name="shield" size={12} /> lex.uz</span>
       </div>
       <div className="chat-body" ref={bodyRef}>
-        <div className="msg bot">Assalomu alaykum. Ushbu hujjat bo&apos;yicha savollaringizga lex.uz bazasi asosida javob beraman.</div>
+        <div className="msg bot">{t("chat.hello")}</div>
         {messages.map((m) => (
           <div key={m.id} className={`msg ${m.role === "user" ? "me" : "bot"}`}>
             {m.text}
@@ -206,9 +192,9 @@ export function AssistantChat({ documentId }: { documentId: string }) {
         ) : null}
       </div>
       <form className="chat-in" onSubmit={send}>
-        <input placeholder="Hujjat haqida savol bering..." autoComplete="off" maxLength={2000} value={input}
+        <input placeholder={t("chat.placeholder")} autoComplete="off" maxLength={2000} value={input}
                onChange={(e) => setInput(e.target.value)} disabled={busy} />
-        <button type="submit" aria-label="Yuborish" disabled={busy}><Icon name="send" /></button>
+        <button type="submit" aria-label={t("chat.send")} disabled={busy}><Icon name="send" /></button>
       </form>
     </div>
   );

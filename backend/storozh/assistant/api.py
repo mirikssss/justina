@@ -29,7 +29,7 @@ class ChatIn(BaseModel):
 async def document_summary(document_id: UUID, lang: Lang | None = None, citizen: Citizen = Depends(current_citizen)):
     """200 — резюме текущей версии; 202 — ещё считается, придёт summary.ready в /stream."""
     try:
-        body = await service.get_summary(document_id, citizen.id, (lang or Lang(citizen.lang)).value)
+        body = await service.get_summary(document_id, citizen.id, (lang or Lang.uz).value)  # по умолчанию узбекский
     except LookupError as e:
         raise HTTPException(status_code=404, detail="document not found") from e
     if body is None:
