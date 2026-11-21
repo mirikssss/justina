@@ -2,7 +2,7 @@
 
 import asyncio
 
-from storozh.assistant.rag.retrieval.service import Hit, search
+from storozh.assistant.rag.retrieval.service import Hit, in_lang, search
 from storozh.shared.contracts import DocumentKind
 
 RRF_K = 60
@@ -19,12 +19,14 @@ def _merge(results: list[list[Hit]], k: int) -> list[Hit]:
     return [best[key] for key in sorted(scores, key=scores.get, reverse=True)[:k]]
 
 
-async def retrieve(queries: list[str], kinds: list[DocumentKind] | None = None, k: int = 8) -> list[Hit]:
-    """top-k статей по всем запросам (FR-A-03: фильтр актов по типу документа)."""
+async def retrieve(queries: list[str], kinds: list[DocumentKind] | None = None, k: int = 8,
+                   lang: str | None = None) -> list[Hit]:
+    """top-k статей по всем запросам (FR-A-03: фильтр актов по типу документа); lang — версия статей для ответа."""
     queries = [q for q in dict.fromkeys(q.strip() for q in queries) if q]
     results = await asyncio.gather(*(asyncio.to_thread(search, q, k=k, expand=False, kinds=kinds)
                                      for q in queries))
-    return _merge(list(results), k)
+    merged = _merge(list(results), k)
+    return await asyncio.to_thread(in_lang, merged, lang) if lang else merged
 
 
 def norms_block(hits: list[Hit], max_chars: int = 2200) -> str:

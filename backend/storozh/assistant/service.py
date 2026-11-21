@@ -27,9 +27,19 @@ async def _summarize_and_store(conn: AsyncConnection, document_id: UUID, version
     todo = [lang for lang in langs if not await repo.summary_exists(conn, document_id, version_no, lang)]
     if not todo:
         return  # кэш: повтор той же версии в модель не идёт (NFR-A-05)
-    doc = await documents.get_document(document_id)
+    try:
+        doc = await documents.get_document(document_id)
+    except LookupError:
+        log.warning("document not found, summary skipped", extra={"document_id": str(document_id)})
+        return  # отравленное событие не должно останавливать очередь
     llm = get_llm()
-    results = await asyncio.gather(*(summary.summarize(llm, doc, lang, document_id, version_no) for lang in todo))
+    try:
+        results = await asyncio.gather(*(summary.summarize(llm, doc, lang, document_id, version_no)
+                                         for lang in todo))
+    except LLMError as e:
+        # модель недоступна: не держим очередь, резюме досчитается по запросу из карточки (GET summary -> 202)
+        log.warning("summary skipped: %s", e, extra={"document_id": str(document_id)})
+        return
     for s in results:
         body = s.model_dump(mode="json")
         if await repo.save_summary(conn, citizen_id=citizen_id, body=body, model=llm.model):

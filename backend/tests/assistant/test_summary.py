@@ -24,7 +24,7 @@ class FakeLLM:
 
 
 async def test_summary_verifies_citations_and_marks_document_as_data(monkeypatch):
-    async def retrieve(queries, kinds=None, k=8):
+    async def retrieve(queries, kinds=None, k=8, lang=None):
         assert kinds == [DOC.kind]  # FR-A-03: фильтр актов по типу документа
         return HITS
 
@@ -46,3 +46,10 @@ def test_provider_refuses_pii_and_logs_requests(caplog):
                           effort="low", think=False)
     assert kw["thinking"] == {"type": "between_tools"} and kw["fallbacks"] == "default"
     assert caplog.records and "31234567890123" not in caplog.text  # NFR-A-02: в логе запросов нет ПИНФЛ
+
+
+def test_citation_list_accepts_markers_without_brackets():
+    from storozh.assistant.llm import citations
+
+    found, unknown = citations.resolve(["gk1:141", "[[epoa:1-23]]", "uk:5"], HITS)
+    assert [c.article for c in found] == ["ст. 141", "п. 23 прил. 1"] and unknown == ["uk:5"]

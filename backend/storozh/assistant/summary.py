@@ -81,11 +81,11 @@ def queries_for(doc: NormalizedDocument) -> list[str]:
 
 
 async def summarize(llm: LLM, doc: NormalizedDocument, lang: Lang, document_id: UUID, version_no: int) -> Summary:
-    hits = await retrieve(queries_for(doc), kinds=[doc.kind], k=8)
+    hits = await retrieve(queries_for(doc), kinds=[doc.kind], k=8, lang=str(Lang(lang).value))
     user = f"<document>\n{document_block(doc)}\n</document>\n\n<norms>\n{norms_block(hits)}\n</norms>"
     out = await llm.complete_json(SYSTEM.format(lang_name=LANG_NAME[Lang(lang)]), user, SCHEMA,
                                   max_tokens=4096, timeout_s=60, effort="medium")
-    cites, _unknown = citations.resolve(out["citations"], hits)
+    cites, _unknown = citations.resolve(out["citations"], hits, Lang(lang).value)
     return Summary(
         document_id=document_id, version_no=version_no, lang=lang,
         what_is_it=citations.strip(out["what_is_it"]),

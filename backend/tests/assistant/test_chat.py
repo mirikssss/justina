@@ -44,7 +44,7 @@ class FakeLLM:
 
 @pytest.fixture(autouse=True)
 def fake_retrieve(monkeypatch):
-    async def retrieve(queries, kinds=None, k=8):
+    async def retrieve(queries, kinds=None, k=8, lang=None):
         return HITS
 
     monkeypatch.setattr(chat, "retrieve", retrieve)
@@ -69,7 +69,7 @@ async def test_answer_stream_masks_pii_and_returns_citations():
 
 
 async def test_no_norms_means_honest_no_answer(monkeypatch):
-    async def empty(queries, kinds=None, k=8):
+    async def empty(queries, kinds=None, k=8, lang=None):
         return []
 
     monkeypatch.setattr(chat, "retrieve", empty)

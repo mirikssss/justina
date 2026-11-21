@@ -60,7 +60,8 @@ class CitationRewriter:
 
     _PARTIAL = re.compile(r"\[(\[[a-z0-9:-]*)?$")
 
-    def __init__(self, hits: list[Hit]) -> None:
+    def __init__(self, hits: list[Hit], lang: str | None = None) -> None:
+        self.lang = lang
         self.by_key = {(h.code, h.number): h for h in hits}
         self.order: list[tuple[str, str]] = []
         self.buf = ""
@@ -86,7 +87,7 @@ class CitationRewriter:
         return re.sub(r"\[\[[^\]]*$", "", out)
 
     def citations(self) -> list[Citation]:
-        return [citations.to_citation(self.by_key[k]) for k in self.order]
+        return [citations.to_citation(self.by_key[k], self.lang) for k in self.order]
 
 
 async def answer_stream(llm: LLM, doc: NormalizedDocument | None, question: str, lang: Lang,
@@ -98,7 +99,7 @@ async def answer_stream(llm: LLM, doc: NormalizedDocument | None, question: str,
     q = mask(question, names=names).text  # человек мог вставить свой ПИНФЛ или телефон в вопрос
     context = f"{doc.title} ({doc.kind.value})" if doc else ""
     queries = await rewrite(llm, q, context)
-    hits = await retrieve(queries, kinds=[doc.kind] if doc else None, k=8)
+    hits = await retrieve(queries, kinds=[doc.kind] if doc else None, k=8, lang=lang.value)
     if not hits:
         result.text = NO_ANSWER[lang]
         yield result.text
@@ -110,7 +111,7 @@ async def answer_stream(llm: LLM, doc: NormalizedDocument | None, question: str,
     doc_part = f"<document>\n{document_block(doc)}\n</document>\n\n" if doc else ""
     messages.append({"role": "user", "content": f"{doc_part}<norms>\n{norms_block(hits)}\n</norms>\n\nВопрос: {q}"})
 
-    rw = CitationRewriter(hits)
+    rw = CitationRewriter(hits, lang.value)
     parts: list[str] = []
     async for chunk in llm.stream(SYSTEM.format(lang_name=LANG_NAME[lang]), messages, max_tokens=2048,
                                   effort="low"):
