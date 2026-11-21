@@ -49,6 +49,13 @@ SYSTEM = """Ты — помощник модуля «Мои документы»
 LANG_NAME = {Lang.ru: "русском", Lang.uz: "узбекском (латиница)"}
 
 
+def _lang_name(lang: Lang, question: str) -> str:
+    """Отвечаем той же письменностью, что и вопрос: узбекская кириллица -> кириллица."""
+    if lang == Lang.uz and re.search(r"[а-яёўқғҳ]", question.lower()):
+        return "узбекском (кириллица)"
+    return LANG_NAME[lang]
+
+
 @dataclass
 class ChatResult:
     text: str = ""
@@ -135,7 +142,7 @@ async def answer_stream(llm: LLM, doc: NormalizedDocument | None, question: str,
 
     rw = CitationRewriter(hits, lang.value)
     parts: list[str] = []
-    async for chunk in llm.stream(SYSTEM.format(lang_name=LANG_NAME[lang]), messages, max_tokens=2048,
+    async for chunk in llm.stream(SYSTEM.format(lang_name=_lang_name(lang, question)), messages, max_tokens=2048,
                                   effort="low"):
         out = rw.feed(chunk)
         if out:

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Card, Icon, Skeleton } from "@/components/mygov";
 import { API_BASE, api, type Schemas } from "@/lib/api/client";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 import { useStream } from "@/lib/stream";
 
 type Lang = Schemas["Lang"];
@@ -49,7 +49,7 @@ const T = {
 } as const;
 
 export function AssistantSummary({ documentId }: { documentId: string }) {
-  const [lang, setLang] = useState<Lang>("uz");
+  const { locale: lang } = useLocale(); // резюме — на языке из шапки (по умолчанию узбекский)
   const qc = useQueryClient();
   const key = ["summary", documentId, lang];
   const summary = useQuery({
@@ -66,14 +66,6 @@ export function AssistantSummary({ documentId }: { documentId: string }) {
   return (
     <Card title={t.title} icon="bolt" tag="AI • lex.uz RAG">
       <div className="ai-sum" data-document-id={documentId}>
-        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-          {(["uz", "ru"] as const).map((l) => (
-            <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l}
-                    style={{ fontWeight: lang === l ? 700 : 400, opacity: lang === l ? 1 : 0.6 }}>
-              {l === "uz" ? "O‘zb" : "Рус"}
-            </button>
-          ))}
-        </div>
         {summary.isError ? <p>{t.error}</p> : null}
         {summary.isLoading || s === null ? (
           <>
