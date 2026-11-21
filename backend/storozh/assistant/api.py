@@ -2,11 +2,14 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from storozh.shared.auth import current_citizen
+from storozh.assistant import service
+from storozh.shared.auth import Citizen, current_citizen
+from storozh.shared.contracts import Lang
 
 router = APIRouter(prefix="/assist", tags=["assistant"], dependencies=[Depends(current_citizen)])
 
@@ -22,8 +25,15 @@ class ChatIn(BaseModel):
 
 
 @router.get("/documents/{document_id}/summary")
-async def document_summary(document_id: UUID, lang: str = "uz"):
-    raise NotImplementedError("GET /assist/documents/{id}/summary")
+async def document_summary(document_id: UUID, lang: Lang | None = None, citizen: Citizen = Depends(current_citizen)):
+    """200 — резюме текущей версии; 202 — ещё считается, придёт summary.ready в /stream."""
+    try:
+        body = await service.get_summary(document_id, citizen.id, (lang or Lang(citizen.lang)).value)
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail="document not found") from e
+    if body is None:
+        return JSONResponse({"status": "pending"}, status_code=202)
+    return body
 
 
 @router.post("/chat")

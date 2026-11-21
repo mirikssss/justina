@@ -36,8 +36,13 @@ class DraftRef(BaseModel):
     url: str
 
 
-async def summarize(doc: NormalizedDocument, lang: Lang) -> Summary:
-    raise NotImplementedError("assistant.summarize: Разработчик 2")
+async def summarize(doc: NormalizedDocument, lang: Lang, *, document_id: UUID | None = None,
+                    version_no: int = 0) -> Summary:
+    """Резюме документа без кэша (кэш и событие summary.ready — в фоновом воркере «Помощника»)."""
+    from storozh.assistant import summary
+    from storozh.assistant.llm.provider import get_llm
+
+    return await summary.summarize(get_llm(), doc, lang, document_id or UUID(int=0), version_no)
 
 
 async def explain_alert(rule_id: str, doc: NormalizedDocument, lang: Lang) -> str | None:
