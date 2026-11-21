@@ -21,4 +21,6 @@ services:
     restart: always
   web:
     ports: !override ["127.0.0.1:8180:3000"]
+    environment:
+      HOSTNAME: 0.0.0.0  # Next standalone иначе слушает только IP своей сети, и Caddy из clusteros-net получает 502
     restart: always
