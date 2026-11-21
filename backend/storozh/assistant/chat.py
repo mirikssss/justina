@@ -99,7 +99,7 @@ async def _find_norms(llm: LLM, doc: NormalizedDocument | None, q: str, lang: La
     Успело переписывание за REWRITE_BUDGET_S — добавляем его запросы; нет — отвечаем по уже найденному.
     """
     kinds = [doc.kind] if doc else None
-    base = [q, *KIND_QUERIES.get(doc.kind, [])[:2]] if doc else [q]
+    base = [q, *KIND_QUERIES.get(doc.kind, [])] if doc else [q]
     context = f"{doc.title} ({doc.kind.value})" if doc else ""
     rewriting = asyncio.create_task(rewrite(llm, q, context))
     first = await retrieve(base, kinds=kinds, k=8, lang=lang.value)
