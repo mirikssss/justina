@@ -106,6 +106,12 @@ def test_g4_silent_for_inactive_non_poa_or_without_daily_check():
     assert "G4" not in fired(CREATED.model_copy(), poa_until(3), ctx)  # не суточная проверка
 
 
+def test_g4_reminds_about_expiring_identity_document():
+    d = fired(ev(DAILY_CHECK, {}), poa_until(5, kind=K.identity_document), RuleContext(today=TODAY))["G4"]
+    assert d.title == "Срок документа скоро истекает"
+    assert fired(ev(DAILY_CHECK, {}), poa_until(5), RuleContext(today=TODAY))["G4"].title == "Срок доверенности скоро истекает"
+
+
 # G5 ------------------------------------------------------------------------
 def test_g5_fires_on_disappeared():
     e = ev("document.disappeared", {"document_id": str(uuid4()), "last_version_no": 3, "missing_count": 2})

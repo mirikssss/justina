@@ -5,6 +5,7 @@ from storozh.documents.adapters.mygov_car_poa.adapter import MyGovCarPoaAdapter
 from storozh.documents.adapters.mygov_career.adapter import MyGovCareerAdapter
 from storozh.documents.adapters.mygov_notarial.adapter import MyGovNotarialAdapter
 from storozh.documents.adapters.mygov_notifications.adapter import MyGovNotificationsAdapter
+from storozh.documents.adapters.mygov_profile.adapter import MyGovDeadlinesAdapter, MyGovFamilyAdapter
 from storozh.documents.adapters.mygov_requests.adapter import MyGovRequestsAdapter
 from storozh.documents.adapters.soliq_legal.adapter import (
     SoliqCompanyAdapter,
@@ -16,7 +17,7 @@ from storozh.documents.adapters.vakolat.adapter import VakolatAdapter
 from storozh.documents.ports import SourceAdapter
 
 ADAPTERS: list[SourceAdapter] = [
-    MyGovCarPoaAdapter(), MyGovRequestsAdapter(), MyGovNotificationsAdapter(), MyGovCareerAdapter(),
+    MyGovCarPoaAdapter(), MyGovRequestsAdapter(), MyGovNotificationsAdapter(), MyGovCareerAdapter(), MyGovFamilyAdapter(), MyGovDeadlinesAdapter(),
     BirdarchaCompanyAdapter(),
     SoliqCompanyAdapter(), SoliqPropertyAdapter(), SoliqVehiclesAdapter(), SoliqTaxesAdapter(),
     MyGovNotarialAdapter(), VakolatAdapter(),

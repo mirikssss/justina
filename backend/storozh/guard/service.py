@@ -32,7 +32,7 @@ from storozh.guard.domain.actions import (
     new_code,
 )
 from storozh.guard.domain.rules import DAILY_CHECK, RuleContext, evaluate
-from storozh.guard.domain.rules.base import POA_KINDS
+from storozh.guard.domain.rules.base import EXPIRING_KINDS
 from storozh.guard.domain.rules.g4_poa_expiring import WINDOW_DAYS
 from storozh.guard.ports import ActionRequest, ActionResult, AlertView, NotLinked
 from storozh.platform import public as platform
@@ -113,7 +113,7 @@ async def handle_event(event: Event, conn: AsyncConnection) -> None:
         return
 
     doc = await _load_document(document_id)
-    if doc is not None and document_id is not None and doc.kind in POA_KINDS:
+    if doc is not None and document_id is not None and doc.kind in EXPIRING_KINDS:
         status = "disappeared" if event.type == "document.disappeared" else str(doc.status)
         await repo.upsert_poa_watch(conn, document_id=document_id, citizen_id=event.citizen_id,
                                     valid_until=doc.valid_until, status=status)

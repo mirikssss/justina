@@ -32,6 +32,9 @@ class DocumentKind(StrEnum):
     notification = "notification"
     company = "company"
     tax_assessment = "tax_assessment"
+    identity_document = "identity_document"
+    family_record = "family_record"
+    marriage = "marriage"
 
 
 class DocumentStatus(StrEnum):

@@ -19,6 +19,9 @@ export const KIND: Record<Kind, { label: string; icon: IconName }> = {
   notification: { label: "Bildirishnoma", icon: "reg" },
   company: { label: "Yuridik shaxs", icon: "briefcase" },
   tax_assessment: { label: "Soliq hisob-kitobi", icon: "credit" },
+  identity_document: { label: "Shaxsni tasdiqlovchi hujjat", icon: "passport" },
+  family_record: { label: "Oila a'zosi", icon: "family" },
+  marriage: { label: "Nikoh", icon: "family" },
 };
 
 export const STATUS: Record<Status, { label: string; tone: Tone }> = {
@@ -38,6 +41,8 @@ export const SOURCE: Record<string, { label: string; icon: IconName }> = {
   "soliq.taxes": { label: "my.soliq.uz · soliqlar", icon: "credit" },
   "birdarcha.applications": { label: "Birdarcha.uz · ro‘yxatdan o‘tkazish arizalari", icon: "doc" },
   "soliq.company": { label: "my.soliq.uz · yuridik shaxs, ta’sischilar", icon: "briefcase" },
+  "mygov.family": { label: "my.gov.uz · oila", icon: "family" },
+  "mygov.doc_deadlines": { label: "my.gov.uz · hujjat muddatlari", icon: "passport" },
   "mygov.career": { label: "my.gov.uz · mehnat faoliyati", icon: "briefcase" },
   "mygov.notifications": { label: "my.gov.uz · bildirishnomalar", icon: "reg" },
   "vakolat.check": { label: "Vakolat.uz · ishonchnomani tekshirish", icon: "shield" },

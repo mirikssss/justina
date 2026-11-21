@@ -34,6 +34,8 @@ class RuleContext:
 # Внутреннее событие суточной проверки сроков (G4). В outbox не публикуется — его собирает планировщик guard.
 DAILY_CHECK = "guard.daily_check"
 POA_KINDS = frozenset({DocumentKind.poa_car, DocumentKind.poa_notarial})
+# Документы со сроком действия, за которым следит G4: доверенности и паспорт/ID-карта
+EXPIRING_KINDS = POA_KINDS | {DocumentKind.identity_document}
 
 
 Rule = Callable[[Event, NormalizedDocument | None, RuleContext], AlertDraft | None]  # None: у события нет документа
