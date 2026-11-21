@@ -33,3 +33,8 @@ if docker network inspect "$PROXY_NET" >/dev/null 2>&1; then
   docker network connect "$PROXY_NET" justina-web-1 2>/dev/null || true
 fi
 $C ps
+
+# RAG: корпус lex.uz и индекс. Разовый сервис rag-index запускается вместе с `up -d` (после migrate) и проверяет
+# отпечатки кода: без изменений в RAG выходит за секунды, после изменений пересчитывает индекс в фоне —
+# сайт при этом работает. Ход: docker compose -p justina ... logs -f rag-index
+echo "RAG: проверка индекса идёт в фоне — логи: $C logs -f rag-index"

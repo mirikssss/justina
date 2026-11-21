@@ -21,6 +21,8 @@ services:
     restart: always
   assist-worker:
     restart: always
+  rag-index:
+    restart: "no"   # разовый: при каждом деплое deploy.sh запускает его заново
   web:
     ports: !override ["127.0.0.1:8180:3000"]
     environment:
