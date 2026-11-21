@@ -111,8 +111,9 @@ async def chat_events(document_id: UUID, citizen_id: UUID, message: str, lang: L
             yield {"event": "token", "data": piece}
     except LLMError as e:
         log.warning("chat failed: %s", e)
-        result.text = result.text or chat.NO_ANSWER[lang]
-        yield {"event": "token", "data": result.text}
+        if not result.text:  # модель недоступна — честно говорим об этом, а не «ответа нет»
+            result.text = chat.UNAVAILABLE[lang]
+            yield {"event": "token", "data": result.text}
     cites = [c.model_dump() for c in result.citations]
     yield {"event": "citations", "data": json.dumps(cites, ensure_ascii=False)}
     async with db.connect("assistant") as conn:

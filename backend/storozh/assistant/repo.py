@@ -60,6 +60,8 @@ async def chat_history(conn: AsyncConnection, citizen_id: UUID, document_id: UUI
 async def add_chat_message(conn: AsyncConnection, citizen_id: UUID, document_id: UUID, role: str, text: str,
                            citations: list[dict]) -> None:
     await conn.execute(
-        "INSERT INTO chat_messages (citizen_id, document_id, role, text, citations) VALUES (%s, %s, %s, %s, %s)",
+        # clock_timestamp, а не now(): вопрос и ответ пишутся в одной транзакции, порядок должен сохраниться
+        "INSERT INTO chat_messages (citizen_id, document_id, role, text, citations, created_at) "
+        "VALUES (%s, %s, %s, %s, %s, clock_timestamp())",
         (citizen_id, document_id, role, text, Jsonb(citations)),
     )

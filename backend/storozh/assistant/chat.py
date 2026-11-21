@@ -28,6 +28,10 @@ NO_ANSWER = {
     Lang.ru: "В нормах, которые я знаю, ответа на этот вопрос нет. Лучше уточнить у нотариуса или юриста.",
     Lang.uz: "Men biladigan me’yorlarda bu savolga javob yo‘q. Notarius yoki yuristdan so‘rash maqsadga muvofiq.",
 }
+UNAVAILABLE = {
+    Lang.ru: "Помощник сейчас недоступен. Попробуйте задать вопрос чуть позже.",
+    Lang.uz: "Yordamchi hozir ishlamayapti. Birozdan keyin qayta urinib ko‘ring.",
+}
 HISTORY_TURNS = 6
 ALERT_TIMEOUT_S = 5
 ALERT_MAX_CHARS = 300
