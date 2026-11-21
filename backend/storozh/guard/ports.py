@@ -43,6 +43,12 @@ class AlertView:
     explanation: str | None
     buttons: tuple[str, ...]
     lang: str = "uz"
+    url: str | None = None  # карточка на нашем домене — единственная ссылка в сообщении (FR-G-06)
+    object_masked: str | None = None  # «***45» — маска объекта, без персональных данных
+
+
+class NotLinked(Exception):
+    """У гражданина нет привязанного Telegram: код и тревоги туда не отправляются (FR-G-08)."""
 
 
 class Notifier(Protocol):
@@ -50,4 +56,6 @@ class Notifier(Protocol):
 
     async def edit_alert(self, citizen_id: UUID, message_id: str, alert: AlertView) -> None: ...
 
-    async def send_code(self, citizen_id: UUID, code: str) -> None: ...
+    async def send_code(self, citizen_id: UUID, code: str, action_type: str = "revoke_car_poa") -> None: ...
+
+    async def send_action_update(self, citizen_id: UUID, action_type: str, status: str) -> None: ...

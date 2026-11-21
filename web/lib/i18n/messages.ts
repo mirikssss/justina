@@ -287,4 +287,7 @@ export const RU: Record<string, string> = {
   "Telegram ochilmagan bo'lsa:": "Если Telegram не открылся:",
   "Javob olishning imkoni bo‘lmadi. Qayta urinib ko‘ring.": "Не удалось получить ответ. Попробуйте ещё раз.",
   "Telegram orqali kirish": "Войти через Telegram",
+  "Telegramni ulash": "Подключить Telegram",
+  "Botda «Start»ni bosing — havola 10 daqiqa amal qiladi": "Нажмите «Start» в боте — ссылка действует 10 минут",
+  "Havolani olib bo'lmadi. Qayta urinib ko'ring.": "Не удалось получить ссылку. Попробуйте ещё раз.",
 };

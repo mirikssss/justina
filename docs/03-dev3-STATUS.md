@@ -4,7 +4,7 @@
 `7d2f738` guard-frontend: экраны · `e0e37bd` guard-frontend: переключатель uz/ru.
 Сверка с ТЗ — `docs/03-dev3-guard-frontend.md`.
 
-Короткий итог: **фронтенд сделан полностью и проверен; правила G1–G7, потребитель событий и машина действий с кодом готовы с тестами; Telegram-бот и живой исполнитель `revoke_car_poa` — ещё заглушки.**
+Короткий итог: **фронтенд сделан полностью и проверен; правила, потребитель событий, машина действий с кодом и Telegram-бот готовы с тестами; остались живой исполнитель `revoke_car_poa`, ст.31/иск и семья на бэкенде.**
 
 Ветка смёрджена с `main` (21.11): конфликты в `DocumentAssistant.tsx` и `LoginScreen.tsx` решены — логика из `main`, строки через `t()`.
 
@@ -42,7 +42,8 @@
 | --- | --- | --- |
 | ~~FR-G-02/03 — правила G1–G7~~ ✅ | `domain/rules/g1…g7_*.py`, тесты `tests/guard/test_rules.py` (23 шт.) | G4 — на внутреннем событии `guard.daily_check` + `RuleContext.today`; G7 — на `alert.created` + `RuleContext.family_consent` (оценивается на каждого родственника с `receive_alerts`). Планировщик G4 и разводка G7 — в worker (шаг 2) |
 | ~~FR-G-01 — потребитель событий~~ ✅ | `service.handle_event`, `worker.py` (consume + суточный G4 раз в час), `adapters/db` | Тревога на `(event_id, rule_id, citizen_id)` unique; `explain_alert` с таймаутом 5 с → иначе `explanation=null` (FR-G-04). G7: guard слушает и свой `alert.created`. G4: guard ведёт свою таблицу `poa_watch` (схему documents читать нельзя). Тесты: `tests/integration/test_guard_consumer.py` (7 шт.) |
-| **FR-G-05 — Telegram-бот** | `adapters/telegram/{bot,notifier}.py`, `templates/{uz,ru}.py` — все заглушки | `/start link_<token>`, `/start login_<nonce>`, тревоги uz/ru, HMAC-подпись `callback_data`, проверка `chat_id` |
+| ~~FR-G-05 — Telegram-бот~~ ✅ | `adapters/telegram/`: `bot.py` (aiogram, только личные чаты), `callbacks.py`, `messages.py`, `client.py`, `notifier.py`, `templates/{uz,ru}.py` | `/start link_<token>` (хеш в `link_tokens`, 10 мин, одноразовый; чужой уже привязанный чат — отказ), `/start login_<nonce>` → `platform.public.bind_login`. `callback_data` = `op.alert_id.HMAC` (≤64 байт, `CALLBACK_HMAC_KEY`) + сверка `chat_id` с владельцем тревоги. Кнопка на сайте: «Telegramni ulash» на `/alerts` |
+| ~~UC-G1 доставка тревоги~~ ✅ | `service.notify_event`, отдельный курсор `guard.notify` в `worker.py` | Ждём объяснение ≤ 3 с → отправляем (шаблон, если не успело) → объяснение дописываем правкой сообщения; `tg_message_id` — защита от повторной отправки. `action.updated` done/failed → сообщение в Telegram. Ссылки на localhost Telegram не принимает в кнопках — тогда ссылка в тексте |
 | ~~FR-G-07/08 — машина действий + код~~ ✅ | `domain/actions.py` (автомат, `judge_confirm`, HMAC кода), `service.create_action/confirm_action`, шаги в `action_steps` (миграция 003) | Каждый переход: шаг + `audit.write` + `action.updated` `{action_id}:{status}` одной транзакцией. Неверный код — 400, 3-я неверная и дальше — 429 (+`Retry-After`), истёк — 410. Код уходит после коммита; не доставлен — `failed`. В ENV=dev без `TELEGRAM_BOT_TOKEN` код пишется в лог (`LogNotifier`) |
 | ~~FR-G-09 — идемпотентность~~ ✅ | `Idempotency-Key` (≥16 симв.) → то же действие; ключ на другой запрос — 409; одно открытое действие на документ+тип (уникальный индекс) — двойной клик не даёт второго отзыва |
 | ~~Оркестрация исполнения~~ ✅ | `service.run_next_action` / `sweep_actions` в `worker.py` (опрос 1 с) | `confirmed → executing →` исполнитель `→ verifying →` `request_refresh` `→ done` на `status_changed → revoked`. Повтор — один и только если форма не отправлена; исключение исполнителя = «возможно, отправлено» → без повтора (NFR-G-04). Таймауты: код 2 мин → `expired`, нет подтверждения источника 120 с → `failed`, зависшее `executing` 5 мин → `failed`. Права: документ проверяется по `poa_watch` (гражданин + `active`) и `kind = poa_car` |
@@ -57,7 +58,7 @@
 - [ ] Новая e-доверенность → тревога в Telegram ≤ 5 с.
 - [ ] «Это не я» → код → отзыв → «Подтверждено источником» < 1 мин, 3 прогона.
 - [x] Повтор события и повтор `confirm` не дают второй тревоги/исполнения (тесты).
-- [ ] Подделанный `callback_data` (шаг 4) и ~~4-я попытка кода~~ ✅ отклоняются (тесты).
+- [x] Подделанный `callback_data` и 4-я попытка кода отклоняются (тесты).
 - [x] Каждое правило G1–G7 покрыто тестом.
 - [x] Все экраны собраны из `/kit`, переключатель uz/ru работает на всех страницах.
 - [x] `import-linter` зелёный (5 контрактов, проверять после каждого шага).
@@ -69,8 +70,14 @@
 1. ~~**Правила G1–G7 + тесты**~~ ✅ — самодостаточно, не нужны ни Telegram, ни браузер. Закрывает строку DoD «каждое правило покрыто тестом».
 2. ~~**Потребитель событий + публикация**~~ ✅ (`worker.py`, `alert.created`) — тревоги начинают появляться в `/alerts`.
 3. ~~**Машина действий + код + идемпотентность**~~ ✅ (`domain/actions.py`, `api.py`) — оживает модалка и `/actions/[id]`.
-4. **Telegram-бот** (привязка, тревоги, кнопки с HMAC, код).
+4. ~~**Telegram-бот**~~ ✅ (привязка, тревоги, кнопки с HMAC, код).
 5. **Исполнитель `revoke_car_poa`** (сессия, скриншот, проверка через источник) — последний, нужен живой аккаунт/HAR (см. §13 открытые вопросы).
+
+## Запуск бота
+
+`TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `CALLBACK_HMAC_KEY` в `.env`, затем `python -m storozh worker bot` (polling)
+и `python -m storozh worker guard` (тревоги, коды, действия). Без токена в `ENV=dev` коды и тревоги пишутся в лог.
+Живой прогон с настоящим ботом ещё не делался — нужен токен от @BotFather.
 
 ## Интеграционные тесты без Docker
 

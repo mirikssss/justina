@@ -124,8 +124,8 @@ async def create_draft(body: DraftIn):
 
 
 @router.post("/telegram/link")
-async def telegram_link():
-    raise NotImplementedError("POST /guard/telegram/link")
+async def telegram_link(citizen: Citizen = Depends(current_citizen)):
+    return {"deep_link": await service.create_telegram_link(citizen.id)}
 
 
 @router.get("/family")

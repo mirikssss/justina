@@ -27,7 +27,7 @@ class CaptureNotifier:
     def __init__(self):
         self.codes: list[tuple[uuid.UUID, str]] = []
 
-    async def send_code(self, citizen_id, code):
+    async def send_code(self, citizen_id, code, action_type="revoke_car_poa"):
         self.codes.append((citizen_id, code))
 
 
