@@ -37,3 +37,30 @@ def test_parse_list_keeps_only_poa_cards():
     doc = MyGovCarPoaAdapter().normalize(records[0])
     assert doc.uri == "uz:notarius:poa:900000001"
     assert doc.status == "active" and doc.owner_role == "principal" and doc.issued_at.isoformat() == "2026-11-21"
+
+
+def test_mock_portal_roundtrip_through_parsers():
+    """Макет -> parse_list + parse_detail -> normalize: маски на месте, статус меняется после отзыва."""
+    from fastapi.testclient import TestClient
+
+    from storozh.documents.adapters.mygov_car_poa.adapter import parse_detail, parse_list
+    from storozh.documents.mockportal import app as mock
+
+    mock.reset()
+    c = TestClient(mock.app)
+    number = c.post("/_mock/issue").json()["number"]
+    adapter = MyGovCarPoaAdapter()
+
+    def poll():
+        (rec,) = parse_list(c.get("/ru/user/requests").text)
+        data = {**rec.data, **parse_detail(c.get(f"/bpm/requests/{rec.external_id}").text)}
+        return adapter.normalize(RawRecord(rec.external_id, data))
+
+    doc = poll()
+    assert doc.uri == f"uz:notarius:poa:{number}" and doc.status == "active"
+    dumped = doc.model_dump_json()
+    assert "Каримов" not in dumped and "123 BC" not in dumped
+    assert doc.object.id_masked == "01 *** BC" and doc.parties[1].name_masked == "Б***р К." and doc.valid_until
+
+    c.post(f"/_mock/revoke/{number}")
+    assert poll().status == "revoked"

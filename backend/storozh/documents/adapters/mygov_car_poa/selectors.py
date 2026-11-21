@@ -11,7 +11,7 @@
 Поменялась вёрстка — правим этот файл и фикстуры в tests/fixtures/, ядро не трогаем.
 """
 
-LIST_URL = "https://my.gov.uz/ru/user/requests"
+LIST_PATH = "/ru/user/requests"  # база — settings.mygov_base_url
 LOGIN_PATH = "/login"  # редирект сюда = сессия истекла
 LOGGED_IN_MARK = ".sbUser"  # блок профиля в боковой панели есть только в залогиненном кабинете
 LIST_READY = f'{LOGGED_IN_MARK}, a[href^="/ru/user/requests/"]'  # список рисуется после расшифровки ответа
@@ -29,5 +29,13 @@ FIELDS = {  # селектор внутри карточки -> ключ RawReco
 DATE_ICON = "span.i-lucide\\:calendar"  # дата подачи — текст родителя иконки календаря
 CHANNEL_ICONS = {"i-lucide:smartphone": "app", "i-lucide:globe": "web"}
 
-# Нет в списке, лежит в iframe заявки — пока None (TODO по HAR/DOM iframe):
-#   plate, vehicle_model, counterparty_name, valid_until
+# Подробности заявки лежат в iframe. ВНИМАНИЕ: разметка iframe живого портала НЕ снята (нет аккаунта с доверенностью);
+# DETAIL_FIELDS описывает разметку макета (documents/mockportal). Когда появится живая — поправить только этот словарь.
+DETAIL_IFRAME = "iframe"
+DETAIL_FIELDS = {
+    "plate": '[data-field="plate"]',
+    "vehicle_model": '[data-field="vehicle_model"]',
+    "counterparty_name": '[data-field="counterparty_name"]',
+    "direction": '[data-field="direction"]',
+    "valid_until": '[data-field="valid_until"]',
+}

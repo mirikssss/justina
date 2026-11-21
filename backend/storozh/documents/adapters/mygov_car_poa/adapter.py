@@ -6,6 +6,7 @@ normalize — в NormalizedDocument: ФИО и госномер маской, П
 
 import re
 from datetime import date, datetime
+from urllib.parse import urljoin
 
 from lxml import html as lxml_html
 from playwright.async_api import TimeoutError as PlaywrightTimeout
@@ -15,6 +16,7 @@ from storozh.documents.adapters.mygov_car_poa import selectors as sel
 from storozh.documents.domain.masking import mask_name, mask_number, mask_plate
 from storozh.documents.ports import BrowserSession, RawRecord
 from storozh.shared import crypto, uri
+from storozh.shared.config import settings
 from storozh.shared.contracts import NormalizedDocument
 
 _STATUS = [  # (подстрока текста статуса в нижнем регистре, статус)
@@ -61,8 +63,19 @@ def parse_list(page_html: str) -> list[RawRecord]:
         icon = row.cssselect(sel.DATE_ICON)
         data["issued_at"] = icon[0].getparent().text_content().strip() if icon else None
         data["direction"] = "Выдана мной"  # «Мои заявки» — только заявки самого человека
-        data["detail_url"] = "https://my.gov.uz" + href
+        data["detail_href"] = href
         out.append(RawRecord(external_id=data["number"], data=data))
+    return out
+
+
+def parse_detail(page_html: str) -> dict[str, str]:
+    """Подробности заявки (содержимое iframe) -> поля RawRecord.data. Пустые поля пропускаем."""
+    tree = lxml_html.fromstring(page_html)
+    out = {}
+    for key, css in sel.DETAIL_FIELDS.items():
+        found = tree.cssselect(css)
+        if found and found[0].text_content().strip():
+            out[key] = found[0].text_content().strip()
     return out
 
 
@@ -74,7 +87,8 @@ class MyGovCarPoaAdapter:
 
     async def fetch(self, session: BrowserSession) -> list[RawRecord]:
         async with browser.page(session) as page:
-            await page.goto(sel.LIST_URL, wait_until="domcontentloaded")
+            base = settings.mygov_base_url.rstrip("/")
+            await page.goto(base + sel.LIST_PATH, wait_until="domcontentloaded")
             try:  # список рисуется после того, как страница расшифровала ответ API
                 await page.wait_for_selector(sel.LIST_READY, timeout=15_000)
             except PlaywrightTimeout:
@@ -82,7 +96,22 @@ class MyGovCarPoaAdapter:
             if sel.LOGIN_PATH in page.url or not await page.query_selector(sel.LOGGED_IN_MARK):
                 raise browser.SessionExpired(self.source_id)
             await page.wait_for_load_state("networkidle")
-            return parse_list(await page.content())
+            records = parse_list(await page.content())
+            return [RawRecord(r.external_id, {**r.data, **await self._detail(page, base, r.data["detail_href"])})
+                    for r in records]
+
+    @staticmethod
+    async def _detail(page, base: str, href: str) -> dict[str, str]:
+        """Открыть заявку и прочитать iframe с подробностями; не нашли — оставляем поля пустыми."""
+        try:
+            await page.goto(base + href, wait_until="domcontentloaded")
+            src = await page.get_attribute(sel.DETAIL_IFRAME, "src", timeout=10_000)
+            if not src:
+                return {}
+            await page.goto(urljoin(base + href, src), wait_until="domcontentloaded")
+            return parse_detail(await page.content())
+        except PlaywrightTimeout:
+            return {}
 
     def normalize(self, raw: RawRecord) -> NormalizedDocument:
         d = raw.data
@@ -108,5 +137,6 @@ class MyGovCarPoaAdapter:
             "valid_until": parse_date(d.get("valid_until")),
             "issuer": {"type": "mygov", "name": "my.gov.uz"},
             "fields": {"number_masked": mask_number(number)},
-            "source_ref": {"external_id": raw.external_id, "url": d.get("detail_url") or sel.LIST_URL},
+            "source_ref": {"external_id": raw.external_id,
+                           "url": settings.mygov_base_url.rstrip("/") + (d.get("detail_href") or sel.LIST_PATH)},
         })

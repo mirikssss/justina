@@ -61,3 +61,38 @@ def seed(citizen: UUID = typer.Option(DEV_CITIZEN_ID, help="citizen_id"),
         await db.close_all()
 
     asyncio.run(run())
+
+
+@app.command()
+def mockportal(port: int = typer.Option(8765, help="порт макета my.gov.uz")):
+    """Тестовый макет my.gov.uz (вымышленные данные): страницы «Мои заявки» для прогона настоящего адаптера."""
+    import uvicorn
+
+    typer.echo(f"Макет на http://localhost:{port}/_mock ; сборщику: MYGOV_BASE_URL=http://localhost:{port}")
+    uvicorn.run("storozh.documents.mockportal.app:app", port=port, log_level="warning")
+
+
+@app.command("poll-once")
+def poll_once(citizen: UUID = typer.Option(DEV_CITIZEN_ID, help="citizen_id"),
+              source: str = typer.Option("mygov.car_poa", help="source_id адаптера")):
+    """Один опрос адаптера пустой сессией (для макета и отладки, без OneID) через настоящий подписанный ingest."""
+
+    async def run() -> None:
+        import httpx
+
+        from storozh.documents.adapters import ADAPTERS, browser
+        from storozh.documents.ports import BrowserSession
+        from storozh.documents.worker import poll_with_session
+        from storozh.shared.config import settings
+
+        adapter = next((a for a in ADAPTERS if a.source_id == source), None)
+        if adapter is None:
+            raise typer.Exit(f"Неизвестный источник {source}")
+        session = BrowserSession(citizen_id=citizen, storage_state={"cookies": [], "origins": []})
+        try:
+            async with httpx.AsyncClient(base_url=settings.api_internal_url, timeout=30) as client:
+                typer.echo(await poll_with_session(session, adapter, client))
+        finally:
+            await browser.close()
+
+    asyncio.run(run())

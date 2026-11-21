@@ -155,3 +155,14 @@ async def session_status(conn: AsyncConnection, citizen_id: UUID, provider: str 
     )
     row = await cur.fetchone()
     return row["status"] if row else None
+
+
+async def poa_for_registry_check(conn: AsyncConnection, citizen_id: UUID) -> list[dict]:
+    """Доверенности гражданина, которые ещё действуют: их сверяет vakolat.check (текущий payload нужен для наложения статуса)."""
+    cur = await conn.execute(
+        """SELECT d.uri, v.payload
+           FROM documents d JOIN document_versions v ON v.document_id = d.id AND v.version_no = d.current_version
+           WHERE d.citizen_id = %s AND d.kind IN ('poa_car', 'poa_notarial') AND d.status NOT IN ('revoked', 'expired')""",
+        (citizen_id,),
+    )
+    return await cur.fetchall()

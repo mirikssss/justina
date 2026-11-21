@@ -21,7 +21,7 @@ import httpx
 
 from storozh.documents import service
 from storozh.documents.adapters import ADAPTERS, browser
-from storozh.documents.ports import SourceAdapter
+from storozh.documents.ports import BrowserSession, SourceAdapter
 from storozh.shared import crypto, db
 from storozh.shared.config import settings
 from storozh.shared.contracts import SourceSnapshot
@@ -53,7 +53,13 @@ async def send_snapshot(snapshot: SourceSnapshot, client: httpx.AsyncClient) -> 
 
 async def poll_once(citizen_id: UUID, adapter: SourceAdapter, client: httpx.AsyncClient) -> dict:
     async with service.session_provider().get(citizen_id) as session:
-        raws = await adapter.fetch(session)
+        return await poll_with_session(session, adapter, client)
+
+
+async def poll_with_session(session: BrowserSession, adapter: SourceAdapter, client: httpx.AsyncClient) -> dict:
+    """Один опрос уже выданной сессией: fetch -> normalize -> подписанный снимок в Ingestion API."""
+    citizen_id = session.citizen_id
+    raws = await adapter.fetch(session)
     docs = [adapter.normalize(r) for r in raws]
     snapshot = SourceSnapshot(snapshot_id=uuid.uuid4(), citizen_id=citizen_id, source=adapter.source_id,
                               fetched_at=datetime.now(UTC), complete=adapter.complete, documents=docs)
