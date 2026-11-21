@@ -789,6 +789,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assist/contract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Проверка договора перед подписанием — текст или файл PDF/DOCX/TXT (base64), пояснение ИИ со ссылками на нормы */
+        post: operations["reviewContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1151,6 +1168,26 @@ export interface components {
             versions_count: number;
             shared_until: string;
             note: string;
+        };
+        ContractIn: {
+            text?: string | null;
+            filename?: string | null;
+            content_base64?: string | null;
+            lang?: components["schemas"]["Lang"] | null;
+        };
+        ContractReview: {
+            summary: string;
+            obligations: string[];
+            risks: {
+                level: string;
+                text: string;
+            }[];
+            missing: string[];
+            questions: string[];
+            citations: components["schemas"]["Citation"][];
+            chars: number;
+            truncated: boolean;
+            disclaimer: string;
         };
         /**
          * NormalizedDocument
@@ -2403,6 +2440,31 @@ export interface operations {
                 };
                 content: {
                     "application/pdf": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    reviewContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractIn"];
+            };
+        };
+        responses: {
+            /** @description Разбор договора */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractReview"];
                 };
             };
             default: components["responses"]["Problem"];

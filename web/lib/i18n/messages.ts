@@ -11,6 +11,29 @@ export const LOCALE_SHORT: Record<Locale, string> = { uz: "O‘z", ru: "Рус" 
 // uz → ru. Ключи — ровно те узбекские строки, что стоят в коде.
 export const RU: Record<string, string> = {
   // --- Каркас / Shell ---
+  // --- Проверка договора ---
+  "Shartnomani tekshirish": "Проверка договора",
+  "Shartnomani imzolashdan oldin tekshirish": "Проверка договора перед подписанием",
+  "Shartnoma matnini kiriting yoki faylni yuklang: sun'iy intellekt shartlarni sodda tushuntiradi va xavflarni ko'rsatadi": "Вставьте текст договора или загрузите файл: ИИ простыми словами объяснит условия и покажет риски",
+  "Shartnoma": "Договор",
+  "Shartnoma matnini shu yerga qo'ying…": "Вставьте текст договора сюда…",
+  "Fayl yuklash (PDF, DOCX, TXT)": "Загрузить файл (PDF, DOCX, TXT)",
+  "Tahlil qilinmoqda…": "Анализируем…",
+  "Shaxsiy ma'lumotlar (JShShIR, telefon) modelga yuborilishidan oldin yashiriladi.": "Персональные данные (ПИНФЛ, телефон) скрываются до отправки модели.",
+  "Juda ko'p so'rov": "Слишком много запросов",
+  "Matn juda qisqa yoki fayl o'qilmadi": "Текст слишком короткий или файл не прочитан",
+  "Tahlil bajarilmadi": "Анализ не выполнен",
+  "Bir soatdan keyin urinib ko'ring": "Попробуйте через час",
+  "Qayta urinib ko'ring": "Попробуйте ещё раз",
+  "Shartnomani kiriting va «Tekshirish» tugmasini bosing": "Введите договор и нажмите «Проверить»",
+  "Qisqacha": "Коротко",
+  "Majburiyatlar": "Обязательства",
+  "Xavflar": "Риски",
+  "Nima yetishmaydi": "Чего не хватает",
+  "Imzolashdan oldin so'rang": "Спросите до подписания",
+  "Qonunchilik": "Законодательство",
+  "Matn uzun bo'lgani uchun boshi tahlil qilindi.": "Текст длинный, проанализировано его начало.",
+
   // --- Сводка, поделиться, доказательный пакет ---
   "Umumiy ko'rinish": "Сводка",
   "Sizning barcha hujjatlaringiz, muddatlar va e'tibor talab qiladigan narsalar": "Все ваши документы, сроки и то, что требует внимания",

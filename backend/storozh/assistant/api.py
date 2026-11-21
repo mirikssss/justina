@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
-from storozh.assistant import service
+from storozh.assistant import contract, service
 from storozh.shared.auth import Citizen, current_citizen
 from storozh.shared.contracts import Lang
 
@@ -93,3 +93,28 @@ async def ask(body: AskIn):
     async for _ in chat.answer_stream(get_llm(), None, body.question, Lang(detect_lang(body.question)), None, result):
         pass
     return {"answer": result.text, "citations": [c.model_dump() for c in result.citations]}
+
+
+_contract_calls: dict[UUID, list[float]] = {}
+CONTRACT_LIMIT, CONTRACT_WINDOW_S = 10, 3600
+
+
+@router.post("/contract")
+async def review_contract(body: contract.ContractIn, citizen: Citizen = Depends(current_citizen)):
+    """Проверка договора перед подписанием: текст или PDF/DOCX/TXT в base64. Не чаще 10 раз в час на человека (стоимость модели)."""
+    import time
+
+    from storozh.assistant.llm.port import LLMError
+    from storozh.assistant.llm.provider import get_llm
+
+    now = time.monotonic()
+    calls = [t for t in _contract_calls.get(citizen.id, []) if now - t < CONTRACT_WINDOW_S]
+    if len(calls) >= CONTRACT_LIMIT:
+        raise HTTPException(status_code=429, detail="too many contract checks, try later")
+    _contract_calls[citizen.id] = [*calls, now]
+    try:
+        return await contract.review(get_llm(), body, body.lang or Lang.uz)
+    except contract.ContractError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except LLMError as e:
+        raise HTTPException(status_code=503, detail="assistant unavailable") from e

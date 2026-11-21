@@ -757,6 +757,23 @@ paths:
             application/pdf:
               schema: {type: string, format: binary}
         default: {$ref: "#/components/responses/Problem"}
+  /assist/contract:
+    post:
+      tags: [assistant]
+      operationId: reviewContract
+      summary: Проверка договора перед подписанием — текст или файл PDF/DOCX/TXT (base64), пояснение ИИ со ссылками на нормы
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ContractIn"}
+      responses:
+        "200":
+          description: Разбор договора
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ContractReview"}
+        default: {$ref: "#/components/responses/Problem"}
 components:
   parameters:
     Cursor: {name: cursor, in: query, schema: {type: string}, description: непрозрачный курсор из next_cursor}
@@ -1172,3 +1189,30 @@ components:
         versions_count: {type: integer}
         shared_until: {type: string}
         note: {type: string}
+
+    ContractIn:
+      type: object
+      properties:
+        text: {type: [string, "null"], maxLength: 200000}
+        filename: {type: [string, "null"], maxLength: 200}
+        content_base64: {type: [string, "null"], maxLength: 6000000}
+        lang: {anyOf: [{$ref: "#/components/schemas/Lang"}, {type: "null"}]}
+
+    ContractReview:
+      type: object
+      required: [summary, obligations, risks, missing, questions, citations, chars, truncated, disclaimer]
+      properties:
+        summary: {type: string}
+        obligations: {type: array, items: {type: string}}
+        risks:
+          type: array
+          items:
+            type: object
+            required: [level, text]
+            properties: {level: {type: string}, text: {type: string}}
+        missing: {type: array, items: {type: string}}
+        questions: {type: array, items: {type: string}}
+        citations: {type: array, items: {$ref: "#/components/schemas/Citation"}}
+        chars: {type: integer}
+        truncated: {type: boolean}
+        disclaimer: {type: string}
