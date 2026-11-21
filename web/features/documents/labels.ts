@@ -32,6 +32,7 @@ export const SOURCE: Record<string, { label: string; icon: IconName }> = {
   "mygov.car_poa": { label: "my.gov.uz · avtomobilga e-ishonchnomalar", icon: "car" },
   "mygov.notarial_history": { label: "Notarial harakatlar tarixi", icon: "reg" },
   "mygov.requests": { label: "my.gov.uz · mening arizalarim", icon: "doc" },
+  "birdarcha.company": { label: "Birdarcha.uz · yuridik shaxslarim", icon: "briefcase" },
   "mygov.career": { label: "my.gov.uz · mehnat faoliyati", icon: "briefcase" },
   "mygov.notifications": { label: "my.gov.uz · bildirishnomalar", icon: "reg" },
   "vakolat.check": { label: "Vakolat.uz · ishonchnomani tekshirish", icon: "shield" },

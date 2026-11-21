@@ -1,5 +1,6 @@
 """Адаптеры источников. Новый реестр: папка adapters/<source>/ + строка в ADAPTERS."""
 
+from storozh.documents.adapters.birdarcha_company.adapter import BirdarchaCompanyAdapter
 from storozh.documents.adapters.mygov_car_poa.adapter import MyGovCarPoaAdapter
 from storozh.documents.adapters.mygov_career.adapter import MyGovCareerAdapter
 from storozh.documents.adapters.mygov_notarial.adapter import MyGovNotarialAdapter
@@ -10,5 +11,6 @@ from storozh.documents.ports import SourceAdapter
 
 ADAPTERS: list[SourceAdapter] = [
     MyGovCarPoaAdapter(), MyGovRequestsAdapter(), MyGovNotificationsAdapter(), MyGovCareerAdapter(),
+    BirdarchaCompanyAdapter(),
     MyGovNotarialAdapter(), VakolatAdapter(),
 ]
