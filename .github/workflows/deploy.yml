@@ -97,16 +97,19 @@ jobs:
       - name: Проверка после деплоя
         if: steps.guard.outputs.skip != 'true'
         run: |
-          # контейнеры поднимаются не мгновенно: ждём до ~2 минут
-          for i in $(seq 1 24); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/documents" || true)
-            [ "$code" = "200" ] && break
+          # контейнеры поднимаются не мгновенно: ждём готовности сайта и API (до ~3 минут)
+          for i in $(seq 1 36); do
+            site=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/documents" || true)
+            api=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/api/healthz" || true)
+            [ "$site" = "200" ] && [ "$api" = "200" ] && break
             sleep 5
           done
-          echo "GET /documents -> $code"; [ "$code" = "200" ]
+          echo "GET /documents -> $site, GET /api/healthz -> $api"; [ "$site" = "200" ] && [ "$api" = "200" ]
           internal=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/api/internal/ingest/snapshots" || true)
           echo "internal ingest снаружи -> $internal (ожидаем 404)"; [ "$internal" = "404" ]
-          curl -fsS "$SITE_URL/api/me" > /dev/null
+          # при включённом входе /api/me без cookie отвечает 401 — это норма; ошибка — только 5xx
+          me=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/api/me" || true)
+          echo "GET /api/me -> $me (200 или 401)"; [ "$me" = "200" ] || [ "$me" = "401" ]
 
       - name: Закрыть ssh
         if: always() && steps.guard.outputs.skip != 'true'
