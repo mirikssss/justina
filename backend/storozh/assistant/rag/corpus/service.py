@@ -4,12 +4,12 @@ import logging
 
 from storozh.assistant.rag.corpus import lexuz, repo
 from storozh.assistant.rag.corpus.parser import parse_bilingual
-from storozh.assistant.rag.corpus.sources import BY_CODE, SOURCES, Source
+from storozh.assistant.rag.corpus.sources import BY_CODE, SOURCES, Source, codes_for_kinds
 from storozh.assistant.rag.db import connection
 
 log = logging.getLogger(__name__)
 
-__all__ = ["SOURCES", "BY_CODE", "Source", "ingest", "articles", "articles_by_ids", "articles_by_keys",
+__all__ = ["SOURCES", "BY_CODE", "Source", "codes_for_kinds", "ingest", "articles", "articles_by_ids", "articles_by_keys",
            "referenced_articles", "article_url"]
 
 

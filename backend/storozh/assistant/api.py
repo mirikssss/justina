@@ -42,7 +42,8 @@ async def search(q: str, k: int = 8, rerank: bool | None = None):
 
     hits = await run_in_threadpool(retrieval.search, q, k=k, rerank=rerank)
     return [
-        {"code": h.code, "number": h.number, "title": h.title, "lang": h.lang, "url": h.url,
+        {"act_id": h.act_id, "act_title": h.act_title, "article": h.article,
+         "code": h.code, "number": h.number, "title": h.title, "lang": h.lang, "url": h.url,
          "score": h.score, "via": sorted(h.via), "path": h.path, "text": h.text,
          "related": [{"code": r.code, "number": r.number, "title": r.title, "url": r.url} for r in h.related]}
         for h in hits
