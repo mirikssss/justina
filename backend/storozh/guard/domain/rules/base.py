@@ -1,8 +1,9 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import date
 from enum import StrEnum
 
-from storozh.shared.contracts import NormalizedDocument
+from storozh.shared.contracts import DocumentKind, NormalizedDocument
 from storozh.shared.events import Event
 
 
@@ -25,8 +26,14 @@ class AlertDraft:
 class RuleContext:
     """Всё, что правилу нужно знать помимо события и документа (согласия семьи и т. п.)."""
 
-    family_consent: bool = False
+    family_consent: bool = False  # G7: оцениваем для родственника, которому выдан receive_alerts
+    today: date | None = None  # G4: дата суточной проверки (guard.daily_check)
     extra: dict = field(default_factory=dict)
+
+
+# Внутреннее событие суточной проверки сроков (G4). В outbox не публикуется — его собирает планировщик guard.
+DAILY_CHECK = "guard.daily_check"
+POA_KINDS = frozenset({DocumentKind.poa_car, DocumentKind.poa_notarial})
 
 
 Rule = Callable[[Event, NormalizedDocument | None, RuleContext], AlertDraft | None]  # None: у события нет документа

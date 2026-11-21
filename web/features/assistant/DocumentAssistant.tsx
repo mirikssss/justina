@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Card, Icon, Skeleton } from "@/components/mygov";
 import { API_BASE, api, type Schemas } from "@/lib/api/client";
+import { useT } from "@/lib/i18n";
 import { useStream } from "@/lib/stream";
 
 type Lang = Schemas["Lang"];
@@ -133,6 +134,7 @@ async function readSse(body: ReadableStream<Uint8Array>, onEvent: (event: string
 type Live = { question: string; answer: string; citations: Citation[] } | null;
 
 export function AssistantChat({ documentId }: { documentId: string }) {
+  const tr = useT();
   const qc = useQueryClient();
   const history = useQuery({
     queryKey: ["chat", documentId],
@@ -173,7 +175,7 @@ export function AssistantChat({ documentId }: { documentId: string }) {
       await qc.invalidateQueries({ queryKey: ["chat", documentId] });
       setLive(null);
     } catch {
-      setLive((l) => (l ? { ...l, answer: l.answer || "Javob olishning imkoni bo‘lmadi. Qayta urinib ko‘ring." } : l));
+      setLive((l) => (l ? { ...l, answer: l.answer || tr("Javob olishning imkoni bo‘lmadi. Qayta urinib ko‘ring.") } : l));
     } finally {
       setBusy(false);
     }
@@ -184,11 +186,11 @@ export function AssistantChat({ documentId }: { documentId: string }) {
     <div className="chat" data-document-id={documentId}>
       <div className="chat-h">
         <div className="ca"><Icon name="bolt" /></div>
-        <div><h3>AI yordamchi</h3><small>Ushbu hujjat bo&apos;yicha</small></div>
+        <div><h3>{tr("AI yordamchi")}</h3><small>{tr("Ushbu hujjat bo'yicha")}</small></div>
         <span className="lv"><Icon name="shield" size={12} /> lex.uz</span>
       </div>
       <div className="chat-body" ref={bodyRef}>
-        <div className="msg bot">Assalomu alaykum. Ushbu hujjat bo&apos;yicha savollaringizga lex.uz bazasi asosida javob beraman.</div>
+        <div className="msg bot">{tr("Assalomu alaykum. Ushbu hujjat bo'yicha savollaringizga lex.uz bazasi asosida javob beraman.")}</div>
         {messages.map((m) => (
           <div key={m.id} className={`msg ${m.role === "user" ? "me" : "bot"}`}>
             {m.text}
@@ -206,9 +208,9 @@ export function AssistantChat({ documentId }: { documentId: string }) {
         ) : null}
       </div>
       <form className="chat-in" onSubmit={send}>
-        <input placeholder="Hujjat haqida savol bering..." autoComplete="off" maxLength={2000} value={input}
+        <input placeholder={tr("Hujjat haqida savol bering...")} autoComplete="off" maxLength={2000} value={input}
                onChange={(e) => setInput(e.target.value)} disabled={busy} />
-        <button type="submit" aria-label="Yuborish" disabled={busy}><Icon name="send" /></button>
+        <button type="submit" aria-label={tr("Yuborish")} disabled={busy}><Icon name="send" /></button>
       </form>
     </div>
   );

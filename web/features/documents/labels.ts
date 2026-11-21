@@ -1,5 +1,6 @@
 import type { IconName, Tone } from "@/components/mygov";
 import type { Schemas } from "@/lib/api/client";
+import type { Locale } from "@/lib/i18n";
 
 type Kind = Schemas["DocumentKind"];
 type Status = Schemas["DocumentStatus"];
@@ -72,10 +73,11 @@ export function fmtDateTime(iso?: string | null): string {
   return new Date(iso).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" });
 }
 
-export function ago(iso?: string | null, now = Date.now()): string {
-  if (!iso) return "hali so'ralmagan";
+export function ago(iso?: string | null, now = Date.now(), locale: Locale = "uz"): string {
+  const ru = locale === "ru";
+  if (!iso) return ru ? "ещё не запрашивалось" : "hali so'ralmagan";
   const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
-  if (s < 60) return `${s} s oldin`;
-  if (s < 3600) return `${Math.round(s / 60)} daq oldin`;
-  return `${Math.round(s / 3600)} soat oldin`;
+  if (s < 60) return ru ? `${s} с назад` : `${s} s oldin`;
+  if (s < 3600) return ru ? `${Math.round(s / 60)} мин назад` : `${Math.round(s / 60)} daq oldin`;
+  return ru ? `${Math.round(s / 3600)} ч назад` : `${Math.round(s / 3600)} soat oldin`;
 }

@@ -4,17 +4,19 @@ import { useEffect, useState } from "react";
 
 import { Button, Card } from "@/components/mygov";
 import { api } from "@/lib/api/client";
+import { useT } from "@/lib/i18n";
 
 // UC-P1: POST /auth/telegram/start -> ссылка на бота (5 минут) -> бот присылает одноразовую ссылку
 // /api/auth/callback?token=… -> cookie сессии -> /documents. Просроченная ссылка возвращает сюда с ?error=expired.
 export function LoginScreen() {
+  const t = useT();
   const [link, setLink] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("error") === "expired") {
-      setError("Ссылка устарела или уже использована. Войдите ещё раз.");
+      setError("expired");
     }
   }, []);
 
@@ -24,7 +26,7 @@ export function LoginScreen() {
     const { data, error: e } = await api.POST("/auth/telegram/start");
     setBusy(false);
     if (e !== undefined || !data) {
-      setError("Не удалось начать вход. Попробуйте ещё раз.");
+      setError("start");
       return;
     }
     setLink(data.deep_link);
@@ -33,15 +35,21 @@ export function LoginScreen() {
 
   return (
     <div className="mx-auto mt-24 max-w-md">
-      <Card title="Вход в «Мои документы»">
+      <Card title={t("«Mening hujjatlarim»ga kirish")}>
         <p className="mb-4 text-sm text-muted">
-          Вход через Telegram-бота: ссылка одноразовая и действует 5 минут. Бот пришлёт ссылку для входа на сайт.
+          {t("Telegram-bot orqali kirish: havola bir martalik va 5 daqiqa amal qiladi. Bot saytga kirish uchun havola yuboradi.")}
         </p>
-        {error ? <p className="mb-4 text-sm" role="alert">{error}</p> : null}
-        <Button onClick={start} disabled={busy}>{busy ? "…" : "Войти через Telegram"}</Button>
+        {error ? (
+          <p className="mb-4 text-sm" role="alert">
+            {error === "expired"
+              ? t("Havola eskirgan yoki allaqachon ishlatilgan. Qaytadan kiring.")
+              : t("Kirishni boshlab bo'lmadi. Qayta urinib ko'ring.")}
+          </p>
+        ) : null}
+        <Button onClick={start} disabled={busy}>{busy ? "…" : t("Telegram orqali kirish")}</Button>
         {link ? (
           <p className="mt-4 text-sm">
-            Если Telegram не открылся: <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
+            {t("Telegram ochilmagan bo'lsa:")} <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
           </p>
         ) : null}
       </Card>

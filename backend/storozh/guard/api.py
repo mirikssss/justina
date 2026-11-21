@@ -1,11 +1,14 @@
 """HTTP-эндпоинты «Сторожа» (/guard/*). Пути и схемы — строго по contracts/openapi.yaml."""
 
+import base64
+import binascii
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
+from storozh.guard import service
 from storozh.shared.auth import Citizen, current_citizen
 
 router = APIRouter(prefix="/guard", tags=["guard"], dependencies=[Depends(current_citizen)])
@@ -37,19 +40,41 @@ class AcceptIn(BaseModel):
     code: str
 
 
+def _encode_cursor(offset: int) -> str:
+    return base64.urlsafe_b64encode(f"o:{offset}".encode()).decode()
+
+
+def _decode_cursor(cursor: str | None) -> int:
+    if not cursor:
+        return 0
+    try:
+        kind, n = base64.urlsafe_b64decode(cursor.encode()).decode().split(":")
+        if kind != "o" or int(n) < 0:
+            raise ValueError
+        return int(n)
+    except (ValueError, binascii.Error, UnicodeDecodeError) as e:
+        raise HTTPException(400, "bad cursor") from e
+
+
 @router.get("/alerts")
-async def list_alerts(status: str | None = None, cursor: str | None = None):
-    raise NotImplementedError("GET /guard/alerts")
+async def list_alerts(status: Literal["new", "seen", "closed"] | None = None, cursor: str | None = None,
+                      citizen: Citizen = Depends(current_citizen)):
+    page = await service.list_alerts(citizen.id, status, _decode_cursor(cursor))
+    nxt = page["next_offset"]
+    return {"items": page["items"], "next_cursor": _encode_cursor(nxt) if nxt is not None else None}
 
 
 @router.post("/alerts/{alert_id}/verdict")
-async def alert_verdict(alert_id: UUID, body: VerdictIn):
-    raise NotImplementedError("POST /guard/alerts/{id}/verdict")
+async def alert_verdict(alert_id: UUID, body: VerdictIn, citizen: Citizen = Depends(current_citizen)):
+    alert = await service.set_verdict(citizen.id, alert_id, body.verdict)
+    if alert is None:
+        raise HTTPException(404, "alert not found")
+    return alert
 
 
 @router.get("/documents/{document_id}/alerts")
-async def document_alerts(document_id: UUID):
-    raise NotImplementedError("GET /guard/documents/{id}/alerts")
+async def document_alerts(document_id: UUID, citizen: Citizen = Depends(current_citizen)):
+    return await service.document_alerts(citizen.id, document_id)
 
 
 @router.post("/actions", status_code=201)

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { Badge, Chips, EmptyState, Icon, Skeleton } from "@/components/mygov";
+import { useT } from "@/lib/i18n";
 
 import { KIND, SOURCE, STATUS, fmtDate } from "./labels";
 import { useDocumentsLive, useFeed } from "./queries";
@@ -27,6 +28,7 @@ const STATUSES = [
 
 // FR-D-14: вкладки по типу, фильтр по статусу, поиск, метка «новое», живое обновление.
 export function DocumentFeed() {
+  const t = useT();
   const [kind, setKind] = useState<KindFilter>("all");
   const [status, setStatus] = useState("");
   const [q, setQ] = useState("");
@@ -34,21 +36,22 @@ export function DocumentFeed() {
   const feed = useFeed({ kind: kind === "all" ? undefined : kind, status: status || undefined, q: q || undefined });
   const items = feed.data?.items ?? [];
   const fresh = items.filter((d) => d.is_new);
+  const tabs = TABS.map((x) => ({ ...x, label: t(x.label) }));
+  const statuses = STATUSES.map((x) => ({ ...x, label: t(x.label) }));
 
   return (
     <>
       <div className="hero">
-        <h1>Mening hujjatlarim</h1>
-        <p>Turli davlat reyestrlaridan to&apos;plangan hujjatlaringiz — versiyalar tarixi bilan birga.
-          Yangi hujjat paydo bo&apos;lsa, darhol xabar beramiz.</p>
+        <h1>{t("Mening hujjatlarim")}</h1>
+        <p>{t("Turli davlat reyestrlaridan to'plangan hujjatlaringiz — versiyalar tarixi bilan birga. Yangi hujjat paydo bo'lsa, darhol xabar beramiz.")}</p>
         <label className="search">
           <Icon name="search" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nomi yoki raqami bo'yicha qidirish" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Nomi yoki raqami bo'yicha qidirish")} />
         </label>
         <div className="stats">
-          <span className="stat">{items.length} ta hujjat</span>
-          <span className="stat">{new Set(items.map((d) => d.source)).size} ta manba</span>
-          {fresh.length ? <span className="stat">{fresh.length} ta yangi</span> : null}
+          <span className="stat">{t("{n} ta hujjat", { n: items.length })}</span>
+          <span className="stat">{t("{n} ta manba", { n: new Set(items.map((d) => d.source)).size })}</span>
+          {fresh.length ? <span className="stat">{t("{n} ta yangi", { n: fresh.length })}</span> : null}
         </div>
       </div>
 
@@ -56,20 +59,20 @@ export function DocumentFeed() {
         <div className="monitor">
           <div className="mi"><Icon name="bell" /></div>
           <div className="mt">
-            <b>Monitoring: {fresh.length} ta yangi hujjat</b>
-            <span>{fresh[0].title} — {fmtDate(fresh[0].issued_at)}. Siz bilan bog'liqligini tekshiring.</span>
+            <b>{t("Monitoring: {n} ta yangi hujjat", { n: fresh.length })}</b>
+            <span>{fresh[0].title} — {fmtDate(fresh[0].issued_at)}. {t("Siz bilan bog'liqligini tekshiring.")}</span>
           </div>
-          <Link className="btn btn-pri" href={`/documents/${fresh[0].id}`}>Ko'rib chiqish</Link>
+          <Link className="btn btn-pri" href={`/documents/${fresh[0].id}`}>{t("Ko'rib chiqish")}</Link>
         </div>
       ) : null}
 
-      <Chips value={kind} options={TABS} onChange={setKind} />
-      <Chips value={status} options={STATUSES} onChange={setStatus} />
+      <Chips value={kind} options={tabs} onChange={setKind} />
+      <Chips value={status} options={statuses} onChange={setStatus} />
 
       {feed.isLoading ? <Skeleton /> : null}
-      {feed.isError ? <EmptyState title="API bilan aloqa yo'q" hint="Backend ishga tushirilganini tekshiring: make db, storozh api" /> : null}
+      {feed.isError ? <EmptyState title={t("API bilan aloqa yo'q")} hint={t("Backend ishga tushirilganini tekshiring: make db, storozh api")} /> : null}
       {feed.isSuccess && items.length === 0 ? (
-        <EmptyState title="Hujjatlar topilmadi" hint="Manbani ulang (storozh documents connect) yoki demo: storozh documents seed" />
+        <EmptyState title={t("Hujjatlar topilmadi")} hint={t("Manbani ulang (storozh documents connect) yoki demo: storozh documents seed")} />
       ) : null}
 
       <div className="doclist">
@@ -83,10 +86,10 @@ export function DocumentFeed() {
               <div className="dmain">
                 <div className="dtitle">
                   {d.title}
-                  {d.is_new ? <Badge tone="new">YANGI</Badge> : null}
+                  {d.is_new ? <Badge tone="new">{t("YANGI")}</Badge> : null}
                 </div>
                 <div className="dmeta">
-                  <span className="src">{src ? <Icon name={src.icon} /> : null} {src?.label ?? d.source}</span>
+                  <span className="src">{src ? <Icon name={src.icon} /> : null} {src ? t(src.label) : d.source}</span>
                   {d.number_masked ? <span className="tnum">№ {d.number_masked}</span> : null}
                   {d.counterparty_masked ? <span>{d.counterparty_masked}</span> : null}
                   {d.object_label ? <span>{d.object_label}</span> : null}
@@ -94,7 +97,7 @@ export function DocumentFeed() {
                 </div>
               </div>
               <div className="dright">
-                <Badge tone={st.tone}>{st.label}</Badge>
+                <Badge tone={st.tone}>{t(st.label)}</Badge>
                 <span className="chev"><Icon name="chev" /></span>
               </div>
             </Link>
