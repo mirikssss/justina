@@ -3,9 +3,9 @@
 import json
 
 import psycopg
-from psycopg.rows import dict_row
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse, Response
+from psycopg.rows import dict_row
 from sse_starlette.sse import EventSourceResponse
 
 from storozh.platform import service
