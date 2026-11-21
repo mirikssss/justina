@@ -24,6 +24,14 @@ def index(codes: list[str] = typer.Argument(None), skip_embeddings: bool = False
 
 
 @app.command()
+def ensure(force: bool = typer.Option(False, help="перезагрузить корпус и индекс, даже если ничего не менялось")):
+    """Автоиндексация при деплое: догрузить корпус и пересчитать индекс, только если изменился код или модель."""
+    from storozh.assistant.rag.ensure import ensure as run
+
+    print(json.dumps(run(force=force), ensure_ascii=False, indent=1, default=str))
+
+
+@app.command()
 def search(query: str, k: int = 8, rerank: bool = False):
     """Гибридный поиск по корпусу."""
     from storozh.assistant.rag.retrieval import service

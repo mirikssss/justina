@@ -30,6 +30,10 @@ assistant/rag/
 
 ## Запуск
 
+На сервере всё автоматически: сервис `rag-index` при каждом деплое выполняет `storozh rag ensure`, который
+перезагружает корпус и пересчитывает индекс, только если изменился код RAG или модель (см. `infra/deploy/README.md`).
+Локально — то же одной командой: `uv run python -m storozh rag ensure`.
+
 ```bash
 make db                                    # из корня репо: Postgres на :5433 + миграции
 cd backend && uv sync

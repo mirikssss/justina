@@ -35,6 +35,7 @@ services:
     <<: *backend
     command: ["python", "-m", "storozh", "api"]
     ports: ["8000:8000"]
+    volumes: [hfcache:/root/.cache/huggingface]   # модель эмбеддингов не качается заново после каждого деплоя
 
   collector:      # Разработчик 1
     <<: *backend
@@ -53,6 +54,16 @@ services:
   assist-worker:  # Разработчик 2
     <<: *backend
     command: ["python", "-m", "storozh", "worker", "assistant"]
+    volumes: [hfcache:/root/.cache/huggingface]
+
+  # Разработчик 2. Автоиндексация RAG при каждом up/деплое: корпус lex.uz и индекс пересчитываются, только если
+  # изменился код загрузки, нарезки или модель эмбеддингов (отпечатки в assistant.rag_state); иначе — выход за секунды.
+  # Первый запуск на пустой базе: ~1 мин скачивание актов + ~3–4 мин эмбеддинги на CPU. Сервис не блокирует остальные.
+  rag-index:
+    <<: *backend
+    command: ["nice", "-n", "10", "python", "-m", "storozh", "rag", "ensure"]
+    restart: "no"
+    volumes: [hfcache:/root/.cache/huggingface, lexcache:/app/backend/data]
 
   web:
     build:
@@ -71,3 +82,5 @@ services:
 
 volumes:
   pgdata:
+  hfcache:    # модели Hugging Face (эмбеддинги)
+  lexcache:   # кэш страниц lex.uz
