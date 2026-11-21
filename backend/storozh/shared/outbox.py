@@ -36,6 +36,7 @@ NOTIFY_CHANNEL = "storozh_outbox"
 _WRITE_LOCK = 0x5702_0001  # сериализует запись: порядок seq = порядок коммитов, курсор ничего не пропускает
 
 Handler = Callable[[Event, AsyncConnection], Awaitable[None]]
+MAX_ATTEMPTS = 5  # T1: после стольких падений обработчика событие уходит в dead letter
 
 
 async def publish(conn: AsyncConnection, *, type: str, subject: str, citizen_id: UUID, data: dict[str, Any],
@@ -63,9 +64,14 @@ async def publish_event(conn: AsyncConnection, event: Event) -> UUID:
 
 async def consume_once(consumer: db.Context, types: Iterable[str], handler: Handler,
                        name: str | None = None) -> bool:
-    """Обработать одно событие. False — новых событий нет или курсор занят другим экземпляром."""
+    """Обработать одно событие. False — новых событий нет или курсор занят другим экземпляром.
+
+    Ошибка обработчика: его записи откатываются (savepoint), попытка считается в shared.consumer_attempts.
+    После MAX_ATTEMPTS событие уходит в shared.outbox_dead_letter, курсор идёт дальше (T1).
+    """
     name = name or consumer
     types = sorted(types)
+    failure: BaseException | None = None
     async with db.connect(consumer) as conn:
         async with conn.transaction():
             await conn.execute(
@@ -86,17 +92,54 @@ async def consume_once(consumer: db.Context, types: Iterable[str], handler: Hand
             row = await cur.fetchone()
             if row is None:
                 return False
-            await handler(Event.model_validate(row["payload"]), conn)
+            event = Event.model_validate(row["payload"])
+            try:
+                async with conn.transaction():  # savepoint: упавший обработчик откатывает только своё
+                    await handler(event, conn)
+            except Exception as e:
+                failure = e
+                if not await _count_failure(conn, name, row["seq"], event, e):
+                    raise  # попытки ещё есть: откат, курсор на месте, consume() подождёт и повторит
+            else:
+                await conn.execute("DELETE FROM shared.consumer_attempts WHERE consumer = %s AND seq = %s",
+                                   (name, row["seq"]))
             await conn.execute(
                 "UPDATE shared.consumer_offsets SET last_seq = %s, updated_at = now() WHERE consumer = %s",
                 (row["seq"], name),
             )
-            return True
+    if failure is not None:
+        log.error("consumer %s: event %s (%s) moved to dead letter after %d attempts: %r",
+                  name, event.id, event.type, MAX_ATTEMPTS, failure)
+    return True
+
+
+async def _count_failure(conn: AsyncConnection, name: str, seq: int, event: Event, error: BaseException) -> bool:
+    """Записать попытку отдельной транзакцией (переживёт откат). True — попытки исчерпаны, событие в dead letter."""
+    text = f"{type(error).__name__}: {error}"[:2000]
+    async with db.connect("shared") as side:
+        cur = await side.execute(
+            """INSERT INTO shared.consumer_attempts (consumer, seq, attempts, last_error) VALUES (%s, %s, 1, %s)
+               ON CONFLICT (consumer, seq) DO UPDATE
+               SET attempts = shared.consumer_attempts.attempts + 1, last_error = EXCLUDED.last_error,
+                   updated_at = now()
+               RETURNING attempts""",
+            (name, seq, text),
+        )
+        attempts = (await cur.fetchone())["attempts"]
+    if attempts < MAX_ATTEMPTS:
+        return False
+    await conn.execute(
+        """INSERT INTO shared.outbox_dead_letter (consumer, seq, event_id, type, citizen_id, attempts, error)
+           VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (consumer, seq) DO NOTHING""",
+        (name, seq, event.id, event.type, event.citizen_id, attempts, text),
+    )
+    await conn.execute("DELETE FROM shared.consumer_attempts WHERE consumer = %s AND seq = %s", (name, seq))
+    return True
 
 
 async def consume(consumer: db.Context, types: Iterable[str], handler: Handler, *, name: str | None = None,
                   idle_s: float = 0.5) -> NoReturn:
-    """Бесконечный цикл потребителя. Ошибка обработчика: откат, пауза 5 с, повтор того же события."""
+    """Бесконечный цикл потребителя. Ошибка обработчика: откат, пауза 5 с, повтор; после MAX_ATTEMPTS — dead letter."""
     log.info("consumer %s started: %s", name or consumer, sorted(types))
     while True:
         try:
