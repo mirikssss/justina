@@ -9,6 +9,8 @@ RRF_K = 60
 
 
 def _merge(results: list[list[Hit]], k: int) -> list[Hit]:
+    """Лучшая находка каждого запроса гарантированно попадает в выдачу (иначе узбекоязычные регламенты
+    вытесняются статьями ГК, которые находятся сразу несколькими русскими запросами), остальное — по RRF."""
     scores: dict[tuple[str, str], float] = {}
     best: dict[tuple[str, str], Hit] = {}
     for hits in results:
@@ -16,7 +18,13 @@ def _merge(results: list[list[Hit]], k: int) -> list[Hit]:
             key = (h.code, h.number)
             scores[key] = scores.get(key, 0.0) + 1.0 / (RRF_K + rank + 1)
             best.setdefault(key, h)
-    return [best[key] for key in sorted(scores, key=scores.get, reverse=True)[:k]]
+    picked = list(dict.fromkeys((hits[0].code, hits[0].number) for hits in results if hits))[:k]
+    for key in sorted(scores, key=scores.get, reverse=True):
+        if len(picked) >= k:
+            break
+        if key not in picked:
+            picked.append(key)
+    return [best[key] for key in picked]
 
 
 async def retrieve(queries: list[str], kinds: list[DocumentKind] | None = None, k: int = 8,

@@ -20,7 +20,8 @@ KIND_QUERIES: dict[DocumentKind, list[str]] = {
     DocumentKind.poa_car: [
         "доверенность на управление и распоряжение транспортным средством полномочия поверенного",
         "отмена доверенности доверителем в любое время",
-        "elektron ishonchnoma avtotransport muddati bekor qilish",
+        "elektron ishonchnomani bekor qilish tartibi",
+        "avtotransport ishonchnomasining amal qilish muddati",
         "передоверие полномочий другому лицу",
     ],
     DocumentKind.poa_notarial: [
