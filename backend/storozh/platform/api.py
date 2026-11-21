@@ -1,10 +1,25 @@
-"""Вход, профиль и поток живых событий (SSE)."""
+"""Вход, профиль, поток живых событий (SSE) и журнал аудита."""
 
-from fastapi import APIRouter, Depends
+import json
 
-from storozh.shared.auth import Citizen, current_citizen
+import psycopg
+from psycopg.rows import dict_row
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import RedirectResponse, Response
+from sse_starlette.sse import EventSourceResponse
+
+from storozh.platform import service
+from storozh.platform.service import SESSION_TTL, LoginError
+from storozh.shared import audit, db, outbox
+from storozh.shared.auth import SESSION_COOKIE, Citizen, current_citizen
+from storozh.shared.config import settings
 
 router = APIRouter(tags=["platform"])
+
+STREAM_TYPES = {"document.created", "document.changed", "document.status_changed", "document.disappeared",
+                "alert.created", "action.updated", "summary.ready"}
+HEARTBEAT_S = 15
+AUDIT_PAGE = 50
 
 
 @router.get("/healthz")
@@ -14,35 +29,96 @@ async def healthz():
 
 @router.post("/auth/telegram/start")
 async def auth_telegram_start():
-    raise NotImplementedError("POST /auth/telegram/start")
+    return {"deep_link": await service.start_login()}
 
 
 @router.get("/auth/callback")
 async def auth_callback(token: str):
-    raise NotImplementedError("GET /auth/callback")
+    try:
+        session = await service.consume_login(token)
+    except LoginError:
+        return RedirectResponse("/login?error=expired", status_code=302)
+    resp = RedirectResponse("/documents", status_code=302)
+    resp.set_cookie(SESSION_COOKIE, session, max_age=int(SESSION_TTL.total_seconds()), path="/",
+                    secure=True, httponly=True, samesite="strict")
+    return resp
 
 
 @router.post("/auth/logout", status_code=204)
-async def auth_logout(citizen: Citizen = Depends(current_citizen)):
-    raise NotImplementedError("POST /auth/logout")
+async def auth_logout(request: Request, citizen: Citizen = Depends(current_citizen)):
+    token = request.cookies.get(SESSION_COOKIE)
+    if token:
+        await service.logout(token, citizen.id)
+    resp = Response(status_code=204)
+    resp.delete_cookie(SESSION_COOKIE, path="/", secure=True, httponly=True, samesite="strict")
+    return resp
 
 
 @router.get("/me")
 async def me(citizen: Citizen = Depends(current_citizen)):
-    return {"id": str(citizen.id), "lang": citizen.lang, "display_name": "Dev Citizen"}
+    return await service.profile(citizen.id)
+
+
+async def _events_after(conn: psycopg.AsyncConnection, citizen_id, last_seq: int) -> list[dict]:
+    cur = await conn.execute(
+        "SELECT seq, type, payload FROM shared.outbox WHERE seq > %s AND citizen_id = %s AND type = ANY(%s) "
+        "ORDER BY seq LIMIT 200",
+        (last_seq, citizen_id, sorted(STREAM_TYPES)),
+    )
+    return await cur.fetchall()
 
 
 @router.get("/stream")
-async def stream(citizen: Citizen = Depends(current_citizen)):
-    """SSE: LISTEN storozh_outbox, фильтр по citizen_id; document.*, alert.created, action.updated, summary.ready."""
-    raise NotImplementedError("GET /stream")
+async def stream(request: Request, citizen: Citizen = Depends(current_citizen)):
+    """SSE: LISTEN storozh_outbox -> события гражданина; heartbeat 15 с; Last-Event-ID — догнать пропущенное."""
+    last_id = request.headers.get("last-event-id")
+
+    async def events():
+        conn = await psycopg.AsyncConnection.connect(settings.database_url, autocommit=True,
+                                                     row_factory=dict_row)
+        try:
+            await conn.execute("SET ROLE storozh_platform")
+            await conn.execute(f"LISTEN {outbox.NOTIFY_CHANNEL}")
+            if last_id and last_id.isdigit():
+                last_seq = int(last_id)
+            else:
+                cur = await conn.execute("SELECT coalesce(max(seq), 0) AS seq FROM shared.outbox")
+                last_seq = (await cur.fetchone())["seq"]
+            while not await request.is_disconnected():
+                wake = False
+                async for n in conn.notifies(timeout=HEARTBEAT_S, stop_after=1):
+                    wake = n.payload.endswith(f":{citizen.id}")
+                if not wake:
+                    continue  # чужое событие или тишина (heartbeat шлёт sse-starlette)
+                for row in await _events_after(conn, citizen.id, last_seq):
+                    last_seq = row["seq"]
+                    yield {"id": str(row["seq"]), "event": row["type"], "data": json.dumps(row["payload"])}
+        finally:
+            await conn.close()
+
+    return EventSourceResponse(events(), ping=HEARTBEAT_S)
 
 
 @router.get("/audit")
-async def audit(cursor: str | None = None, citizen: Citizen = Depends(current_citizen)):
-    raise NotImplementedError("GET /audit")
+async def audit_list(cursor: str | None = None, citizen: Citizen = Depends(current_citizen)):
+    before = int(cursor) if cursor and cursor.isdigit() else None
+    async with db.connect("platform") as conn:
+        cur = await conn.execute(
+            "SELECT seq, actor, action, target, at, hash FROM shared.audit_log "
+            "WHERE actor = %s AND (%s::bigint IS NULL OR seq < %s) ORDER BY seq DESC LIMIT %s",
+            (f"citizen:{citizen.id}", before, before, AUDIT_PAGE + 1),
+        )
+        rows = await cur.fetchall()
+    items = rows[:AUDIT_PAGE]
+    next_cursor = str(items[-1]["seq"]) if len(rows) > AUDIT_PAGE else None
+    return {"items": [{**r, "at": r["at"].isoformat()} for r in items], "next_cursor": next_cursor}
 
 
 @router.get("/audit/verify")
 async def audit_verify():
-    raise NotImplementedError("GET /audit/verify")
+    async with db.connect("platform") as conn:
+        broken = await audit.verify(conn)
+    return {"ok": broken is None, "broken_seq": broken}
+
+
+

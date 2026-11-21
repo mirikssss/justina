@@ -41,3 +41,29 @@ async def upsert_citizen(conn: AsyncConnection, citizen_id: UUID, pinfl_hmac: st
                display_name = EXCLUDED.display_name, lang = EXCLUDED.lang""",
         (citizen_id, pinfl_hmac, pinfl_enc, display_name, lang),
     )
+
+
+async def create_nonce(conn: AsyncConnection, nonce_hash: str, expires_at: datetime) -> None:
+    await conn.execute("INSERT INTO login_nonces (nonce_hash, expires_at) VALUES (%s, %s)", (nonce_hash, expires_at))
+
+
+async def bind_nonce(conn: AsyncConnection, nonce_hash: str, citizen_id: UUID, chat_id_enc: bytes,
+                     token_hash: str) -> bool:
+    """Одна привязка на nonce: повторный /start с той же ссылкой не выдаёт второй токен."""
+    cur = await conn.execute(
+        """UPDATE login_nonces SET citizen_id = %s, chat_id_enc = %s, token_hash = %s
+           WHERE nonce_hash = %s AND token_hash IS NULL AND used_at IS NULL AND expires_at > now()
+           RETURNING nonce_hash""",
+        (citizen_id, chat_id_enc, token_hash, nonce_hash),
+    )
+    return await cur.fetchone() is not None
+
+
+async def use_login_token(conn: AsyncConnection, token_hash: str) -> UUID | None:
+    cur = await conn.execute(
+        """UPDATE login_nonces SET used_at = now()
+           WHERE token_hash = %s AND used_at IS NULL AND expires_at > now() RETURNING citizen_id""",
+        (token_hash,),
+    )
+    row = await cur.fetchone()
+    return row["citizen_id"] if row else None
