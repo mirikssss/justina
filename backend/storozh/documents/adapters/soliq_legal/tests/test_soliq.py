@@ -45,3 +45,22 @@ def test_taxes_debt_means_active_and_debtor():
 def test_money_and_cadastre_helpers():
     assert str(parse_money("1 000 000,50")) == "1000000.50" and parse_money("—") is None
     assert mask_cadastre("12:34") == "12:34"
+
+
+def test_company_founders_and_shares_masked():
+    from storozh.documents.adapters.soliq_legal.adapter import SoliqCompanyAdapter, parse_company
+
+    company = parse_company(T.COMPANY)
+    assert company["inn"] == "300000001" and company["name"] == '"EXAMPLE CO 1" MCHJ' and len(company["founders"]) == 2
+    doc = SoliqCompanyAdapter().normalize(RawRecord(company["inn"], company))
+    assert doc.uri == "uz:soliq:company:300000001" and doc.kind == "company"
+    f = doc.fields["founders"]
+    assert f[0]["name_masked"] == "I***n I." and f[0]["share_percent"] == "60" and f[0]["amount"] == "600 000.00 сум"
+    assert f[1]["legal_entity"] and f[1]["inn"] == "300000999" and f[1]["name_masked"] == '"PARTNER CO" MCHJ'
+    assert "IVANOV" not in doc.model_dump_json() and "PETROVICH" not in doc.model_dump_json()
+
+
+def test_company_page_without_header_is_none():
+    from storozh.documents.adapters.soliq_legal.adapter import parse_company
+
+    assert parse_company("<div>другая страница</div>") is None

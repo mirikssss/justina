@@ -1,8 +1,7 @@
-"""birdarcha.company — юрлица человека из заявок на регистрацию в Birdarcha (Business Registration).
+"""birdarcha.applications — заявки человека на регистрацию и изменение юрлиц в Birdarcha (Business Registration).
 
-Один документ на юрлицо: URI uz:birdarcha:company:{ИНН}. Если заявок по ИНН несколько (регистрация, изменения),
-берём самую свежую. ИНН и название юрлица публичны; ПИНФЛ человека на странице не читаем.
-Роль человека (директор или учредитель) на списке не видна — владелец записи `party`.
+Одна заявка = документ `application` uz:birdarcha:request:{номер}. Само юрлицо (учредители, доли) — `soliq.company`.
+ИНН и название юрлица публичны; ПИНФЛ человека на странице не читаем.
 """
 
 from datetime import date, datetime
@@ -31,24 +30,21 @@ def status_of(text: str) -> str:
 
 
 def parse_list(page_html: str) -> list[RawRecord]:
-    """Строки таблицы -> по одной записи на ИНН (самая свежая заявка)."""
-    newest: dict[str, dict] = {}
+    """Строки таблицы -> по одной записи на заявку."""
+    out = []
     for tr in lxml_html.fromstring(page_html).cssselect(sel.ROWS):
         cells = [td.text_content().strip() for td in tr.cssselect("td")]
         if len(cells) < len(sel.COLUMNS):
             continue
         d = dict(zip(sel.COLUMNS, cells, strict=False))
-        if not d["inn"].isdigit():
-            continue
-        cur = newest.get(d["inn"])
-        if cur is None or (_date(d["date"]) or date.min, d["application_no"]) > (_date(cur["date"]) or date.min, cur["application_no"]):
-            newest[d["inn"]] = d
-    return [RawRecord(external_id=inn, data=d) for inn, d in newest.items()]
+        if d["application_no"].isdigit():
+            out.append(RawRecord(external_id=d["application_no"], data=d))
+    return out
 
 
 class BirdarchaCompanyAdapter:
-    source_id = "birdarcha.company"
-    title = "Birdarcha.uz · мои юрлица"
+    source_id = "birdarcha.applications"
+    title = "Birdarcha.uz · заявки на регистрацию юрлиц"
     poll_interval_s = 600
     complete = True
 
@@ -65,16 +61,16 @@ class BirdarchaCompanyAdapter:
     def normalize(self, raw: RawRecord) -> NormalizedDocument:
         d = raw.data
         return NormalizedDocument.model_validate({
-            "uri": uri.build("birdarcha", "company", d["inn"]),
-            "kind": "company",
+            "uri": uri.build("birdarcha", "request", d["application_no"]),
+            "kind": "application",
             "source": self.source_id,
-            "title": d["name"],
+            "title": f"{d['application_type']}: {d['name']}",
             "status": status_of(d["status_text"]),
             "owner_role": "party",
             "parties": [{"role": "party", "name_masked": "Вы"}],
             "issued_at": _date(d["date"]),
             "issuer": {"type": "adliya", "name": "Birdarcha.uz"},
-            "fields": {"inn": d["inn"], "application_no": d["application_no"], "application_type": d["application_type"]},
-            "source_ref": {"external_id": d["inn"],
+            "fields": {"inn": d["inn"], "application_no": d["application_no"], "company": d["name"]},
+            "source_ref": {"external_id": d["application_no"],
                            "url": settings.birdarcha_base_url.rstrip("/") + sel.VIEW_PATH.format(number=d["application_no"])},
         })

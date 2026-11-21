@@ -25,3 +25,11 @@ VEHICLE_COLUMNS = ("no", "name", "plate", "year", "registered")
 TAX_PAGE = "taxes"
 TAX_COLUMNS = ("no", "code", "name", "accrued", "paid", "debt", "penalty", "overpaid", "date")
 DATE_FORMATS = ("%d.%m.%Y", "%Y-%m-%d")
+
+# «Состав уставного капитала»: general_info/chartercapital. CSS-модули с хешем в конце класса — берём по префиксу.
+COMPANY_PAGE = "chartercapital"
+COMPANY_READY = '[class*="Profile_tin"]'            # шапка: «ИНН <span>…</span>», рядом [class*="Profile_title"] — название
+FOUNDER_PANEL = '[class*="Profile_info_panel"]'      # одна панель на учредителя
+FOUNDER_NAME = '[class*="Profile_title"]'
+FOUNDER_LEGAL_BADGE = '[class*="Profile_badge"]'     # значок «Юридическое лицо» только у организаций
+FOUNDER_ROW = '[class*="Profile_row"]'               # строки «ИНН» и «Доля»: [class*="Profile_key"] / _value_bold (процент) / _value (сумма)

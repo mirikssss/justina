@@ -14,7 +14,7 @@ from playwright.async_api import TimeoutError as PlaywrightTimeout
 
 from storozh.documents.adapters import browser
 from storozh.documents.adapters.soliq_legal import selectors as sel
-from storozh.documents.domain.masking import mask_plate
+from storozh.documents.domain.masking import mask_name, mask_plate
 from storozh.documents.ports import BrowserSession, RawRecord
 from storozh.shared import uri
 from storozh.shared.config import settings
@@ -58,11 +58,11 @@ def _short_hash(*parts: str) -> str:
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
-async def _page_html(session: BrowserSession, slug: str, source_id: str) -> str:
+async def _page_html(session: BrowserSession, slug: str, source_id: str, ready: str = "table") -> str:
     async with browser.page(session) as page:
         await page.goto(settings.soliq_base_url.rstrip("/") + sel.BASE_PATH + slug, wait_until="domcontentloaded")
         try:
-            await page.wait_for_selector("table", timeout=20_000)
+            await page.wait_for_selector(ready, timeout=20_000)
         except PlaywrightTimeout:
             raise browser.SessionExpired(source_id) from None
         if sel.CABINET_MARK not in page.url:
@@ -72,6 +72,32 @@ async def _page_html(session: BrowserSession, slug: str, source_id: str) -> str:
 
 
 _ISSUER = {"type": "tax", "name": "my.soliq.uz"}
+
+
+def parse_company(page_html: str) -> dict | None:
+    """Шапка и панели учредителей «Состава уставного капитала» -> {inn, name, founders[]}. Нет шапки — None."""
+    tree = lxml_html.fromstring(page_html)
+    tin = tree.xpath('//*[contains(@class, "Profile_tin")]')
+    if not tin:
+        return None
+    inn = "".join(tin[0].xpath("./span//text()")).strip()
+    title = tin[0].getparent().xpath('./*[contains(@class, "Profile_title")]')
+    founders = []
+    for panel in tree.cssselect(sel.FOUNDER_PANEL):
+        name = panel.cssselect(sel.FOUNDER_NAME)
+        if not name:
+            continue
+        row = {"name": name[0].text_content().strip(), "legal_entity": bool(panel.cssselect(sel.FOUNDER_LEGAL_BADGE)),
+               "inn": "", "share": "", "amount": ""}
+        for r in panel.cssselect(sel.FOUNDER_ROW):
+            key = "".join(r.xpath('./*[contains(@class, "Profile_key")]//text()')).strip().lower()
+            if key.startswith("инн"):
+                row["inn"] = "".join(r.xpath('./*[contains(@class, "Profile_value")][1]//text()')).strip()
+            elif key.startswith("доля"):
+                row["share"] = "".join(r.xpath('./*[contains(@class, "Profile_value_bold")]//text()')).strip()
+                row["amount"] = "".join(r.xpath('./*[@class and contains(@class, "Profile_value") and not(contains(@class, "bold"))]//text()')).strip()
+        founders.append(row)
+    return {"inn": inn, "name": title[0].text_content().strip() if title else "", "founders": founders}
 
 
 class SoliqPropertyAdapter:
@@ -169,4 +195,43 @@ class SoliqTaxesAdapter:
             "issuer": _ISSUER,
             "fields": {k: d.get(k) for k in ("code", "accrued", "paid", "debt", "penalty", "overpaid")},
             "source_ref": {"external_id": raw.external_id},
+        })
+
+
+class SoliqCompanyAdapter:
+    """Юрлицо в налоговом реестре: ИНН, название, учредители и доли (kind company, URI по ИНН).
+
+    Учредитель-человек — только маска имени, юрлицо-учредитель — название и ИНН как есть. Какой из учредителей сам владелец
+    кабинета, со страницы не видно: роль владельца `party`, доли лежат в fields.founders.
+    """
+
+    source_id = "soliq.company"
+    title = "my.soliq.uz · юрлицо, учредители и доли"
+    poll_interval_s = 1800
+    complete = True
+
+    async def fetch(self, session: BrowserSession) -> list[RawRecord]:
+        page_html = await _page_html(session, sel.COMPANY_PAGE, self.source_id, ready=sel.COMPANY_READY)
+        company = parse_company(page_html)
+        return [RawRecord(external_id=company["inn"], data=company)] if company and company["inn"] else []
+
+    def normalize(self, raw: RawRecord) -> NormalizedDocument:
+        d = raw.data
+        founders = [{
+            "name_masked": f["name"] if f["legal_entity"] else mask_name(f["name"]),
+            "legal_entity": f["legal_entity"], "inn": f["inn"] if f["legal_entity"] else "",
+            "share_percent": parse_money(f["share"]) and str(parse_money(f["share"])),
+            "amount": f["amount"],
+        } for f in d["founders"]]
+        return NormalizedDocument.model_validate({
+            "uri": uri.build("soliq", "company", d["inn"]),
+            "kind": "company",
+            "source": self.source_id,
+            "title": d["name"] or f"INN {d['inn']}",
+            "status": "active",
+            "owner_role": "party",
+            "parties": [{"role": "founder", "name_masked": f["name_masked"]} for f in founders],
+            "issuer": _ISSUER,
+            "fields": {"inn": d["inn"], "founders": founders},
+            "source_ref": {"external_id": d["inn"]},
         })

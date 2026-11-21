@@ -12,3 +12,13 @@ VEHICLES = """<table><thead><tr><th>№</th><th>Наименование</th><th
 TAXES = """<table><thead><tr><th>№</th><th>Код</th><th>Наименование</th><th>Начислено</th><th>Оплачено</th><th>Задолженность</th><th>Пеня</th><th>Переплата</th><th>Дата</th></tr></thead>
 <tbody><tr><td>1</td><td>10101</td><td>Налог на прибыль</td><td>1 000 000</td><td>400 000</td><td>600 000</td><td>0</td><td>0</td><td>20.11.2026</td></tr>
 <tr><td>2</td><td>10202</td><td>НДС</td><td>500 000</td><td>500 000</td><td>0</td><td>0</td><td>0</td><td>20.10.2026</td></tr></tbody></table>"""
+
+COMPANY = """<div class="Profile_header__9rE8l"><div class="Profile_tin__vq+7w">ИНН <span>300000001</span></div><div class="Profile_title__a1">"EXAMPLE CO 1" MCHJ</div></div>
+<div class="Profile_chaptercapital__rKccD"><div class="Profile_space__x">
+<div><div class="Profile_info_panel__a"><div class="Profile_header__b"><span></span><span class="Profile_title__c">IVANOV IVAN PETROVICH</span></div><div class="Profile_content__d">
+<div class="Profile_row__e"><div class="Profile_key__f">ИНН</div><div class="Profile_value__g"></div></div>
+<div class="Profile_row__e"><div class="Profile_key__f">Доля</div><div class="Profile_value_bold__h">60%</div><div class="Profile_value__g">600 000.00 сум</div></div></div></div></div>
+<div><div class="Profile_info_panel__a"><div class="Profile_header__b"><span></span><span class="Profile_title__c">"PARTNER CO" MCHJ</span><div class="Profile_badge__i">Юридическое лицо</div></div><div class="Profile_content__d">
+<div class="Profile_row__e"><div class="Profile_key__f">ИНН</div><div class="Profile_value__g">300000999</div></div>
+<div class="Profile_row__e"><div class="Profile_key__f">Доля</div><div class="Profile_value_bold__h">40%</div><div class="Profile_value__g">400 000.00 сум</div></div></div></div></div>
+</div></div>"""

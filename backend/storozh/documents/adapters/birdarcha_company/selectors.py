@@ -17,5 +17,5 @@ READY = ".ant-table-tbody tr"  # есть и строка «нет данных�
 COLUMNS = ("no", "application_no", "name", "inn", "application_type", "status_text", "date")
 DATE_FORMAT = "%d.%m.%Y"
 STATUS = [  # (подстрока в нижнем регистре, статус)
-    ("muvaffaqiyatli", "active"), ("успешно", "active"), ("successful", "active"),
+    ("muvaffaqiyatli", "completed"), ("успешно", "completed"), ("successful", "completed"),
 ]
