@@ -37,8 +37,13 @@ async def retrieve(queries: list[str], kinds: list[DocumentKind] | None = None, 
     return await asyncio.to_thread(in_lang, merged, lang) if lang else merged
 
 
-def norms_block(hits: list[Hit], max_chars: int = 2200) -> str:
-    """Нормы для промпта: метка, акт, статья, текст (длинный текст обрезается с пометкой)."""
+# Поиск идёт по кускам, а модели отдаём статью целиком: условие из части 3 не должно потеряться из-за того,
+# что совпадение нашлось в части 1. Предел — только от аномально длинных статей (самая длинная сейчас ~4,5 тыс.).
+ARTICLE_MAX_CHARS = 12_000
+
+
+def norms_block(hits: list[Hit], max_chars: int = ARTICLE_MAX_CHARS) -> str:
+    """Нормы для промпта: метка, акт, статья и её полный текст."""
     parts = []
     for h in hits:
         text = h.text if len(h.text) <= max_chars else h.text[:max_chars] + " …[текст статьи сокращён]"

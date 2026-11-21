@@ -44,3 +44,18 @@ def rerank(query: str, passages: list[str]) -> list[float]:
     if not passages:
         return []
     return [float(s) for s in _reranker().predict([(query, p) for p in passages], batch_size=8)]
+
+
+# Чанк не должен быть длиннее окна модели: всё, что дальше, модель эмбеддингов просто не читает.
+_PASSAGE_RESERVE = 16  # префикс «passage: » и служебные токены
+_CHUNK_CAP = 1024  # у BGE-M3 окно 8192, но статья длиннее ~1000 токенов лучше делится на части
+
+
+def count_tokens(text: str) -> int:
+    """Сколько токенов займёт текст как passage (с префиксом модели, если он нужен)."""
+    tok = _encoder().tokenizer
+    return len(tok(_prefix("passage") + text, add_special_tokens=True)["input_ids"])
+
+
+def chunk_token_budget() -> int:
+    return min(_encoder().max_seq_length - _PASSAGE_RESERVE, _CHUNK_CAP)
