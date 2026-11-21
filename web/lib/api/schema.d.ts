@@ -848,6 +848,10 @@ export interface components {
             /** @description true — в снимке весь список; только тогда пропажа записи = document.disappeared (после двух снимков подряд) */
             complete: boolean;
             documents: components["schemas"]["normalized_document.schema"][];
+            /** @description URI документа -> сырые данные источника (с ПИНФЛ и ФИО). Ingest шифрует их в document_versions.raw_enc, в payload и логи не попадают */
+            raw?: {
+                [key: string]: Record<string, never>;
+            };
         };
     };
     responses: {
