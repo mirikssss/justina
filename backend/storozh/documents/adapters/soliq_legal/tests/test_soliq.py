@@ -55,7 +55,7 @@ def test_company_founders_and_shares_masked():
     doc = SoliqCompanyAdapter().normalize(RawRecord(company["inn"], company))
     assert doc.uri == "uz:soliq:company:300000001" and doc.kind == "company"
     f = doc.fields["founders"]
-    assert f[0]["name_masked"] == "I***n I." and f[0]["share_percent"] == "60" and f[0]["amount"] == "600 000.00 сум"
+    assert f[0]["name_masked"] == "I***N I." and f[0]["share_percent"] == "60" and f[0]["amount"] == "600 000.00 сум"
     assert f[1]["legal_entity"] and f[1]["inn"] == "300000999" and f[1]["name_masked"] == '"PARTNER CO" MCHJ'
     assert "IVANOV" not in doc.model_dump_json() and "PETROVICH" not in doc.model_dump_json()
 
