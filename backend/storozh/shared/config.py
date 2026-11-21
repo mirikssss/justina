@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     master_key: str = ""  # base64, 32 байта: конвертное шифрование AES-256-GCM
     pinfl_hmac_key: str = ""  # отдельный ключ для поиска ПИНФЛ по HMAC
     ingest_hmac_key: str = ""  # подпись X-Signature у POST /internal/ingest/snapshots
+    remote_ingest_hmac_key: str = ""  # ключ подписи удалённого сервера для `documents sync` (INGEST_HMAC_KEY сервера)
     callback_hmac_key: str = ""  # подпись callback_data в Telegram
 
     # --- каналы ---

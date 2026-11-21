@@ -166,3 +166,14 @@ async def poa_for_registry_check(conn: AsyncConnection, citizen_id: UUID) -> lis
         (citizen_id,),
     )
     return await cur.fetchall()
+
+
+async def current_payloads(conn: AsyncConnection, citizen_id: UUID) -> list[dict]:
+    """Текущие версии всех документов гражданина (source + payload) — для `documents sync` на другой сервер."""
+    cur = await conn.execute(
+        """SELECT d.source, v.payload
+           FROM documents d JOIN document_versions v ON v.document_id = d.id AND v.version_no = d.current_version
+           WHERE d.citizen_id = %s ORDER BY d.source, d.uri""",
+        (citizen_id,),
+    )
+    return await cur.fetchall()

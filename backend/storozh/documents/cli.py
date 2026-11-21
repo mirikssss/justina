@@ -192,3 +192,27 @@ def live(citizen: UUID = typer.Option(DEV_CITIZEN_ID, help="citizen_id")):
                 await ctx.close()
 
     asyncio.run(run())
+
+
+@app.command()
+def sync(remote_citizen: UUID = typer.Option(..., help="citizen_id на сервере (его показывает /api/me после входа)"),
+         url: str = typer.Option("https://justina.clusteros.co.uz/agent", help="база удалённого ingest"),
+         local_citizen: UUID = typer.Option(DEV_CITIZEN_ID, help="citizen_id в локальной базе"),
+         loop_s: int = typer.Option(0, help="повторять каждые N секунд (0 — один раз)")):
+    """Отправить локальные документы на сервер подписанными снимками. Ключ сервера — REMOTE_INGEST_HMAC_KEY в .env."""
+
+    async def run() -> None:
+        from storozh.documents import sync as sync_mod
+        from storozh.shared import db
+        from storozh.shared.config import settings
+
+        if not settings.remote_ingest_hmac_key:
+            raise typer.Exit("Задайте REMOTE_INGEST_HMAC_KEY (INGEST_HMAC_KEY сервера) в .env")
+        while True:
+            typer.echo(await sync_mod.push_once(local_citizen, remote_citizen, url, settings.remote_ingest_hmac_key))
+            if not loop_s:
+                break
+            await asyncio.sleep(loop_s)
+        await db.close_all()
+
+    asyncio.run(run())
