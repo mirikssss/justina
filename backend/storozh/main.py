@@ -10,18 +10,25 @@ from storozh.documents.api import router as documents_router
 from storozh.guard.api import router as guard_router
 from storozh.platform import public as platform_public
 from storozh.platform.api import router as platform_router
-from storozh.shared import auth, db, problem
+from storozh.platform.stream_hub import hub as stream_hub
+from storozh.shared import auth, db, problem, ratelimit
+from storozh.shared.config import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
+    await stream_hub.close()
     await db.close_all()
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Сторож сделок", version="0.1.0", lifespan=lifespan)
+    docs = settings.docs_enabled  # T8: в проде схема API и Swagger наружу не отдаются
+    app = FastAPI(title="Сторож сделок", version="0.1.0", lifespan=lifespan,
+                  docs_url="/docs" if docs else None, redoc_url="/redoc" if docs else None,
+                  openapi_url="/openapi.json" if docs else None)
     problem.install(app)
+    ratelimit.install(app)
     auth.set_session_resolver(platform_public.session_citizen)
     for r in (platform_router, documents_router, documents_internal, guard_router, assistant_router):
         app.include_router(r)

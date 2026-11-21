@@ -3,7 +3,8 @@
 # justina-web-1, который deploy.sh подключает к clusteros-net. Сертификат Caddy выпустит сам.
 # Применять: caddy validate, затем caddy reload — без рестарта контейнера, чтобы не уронить соседний проект.
 justina.clusteros.co.uz {
-    @internal path /api/internal/*
+    # T8: внутренние эндпоинты и Swagger наружу не отдаются
+    @internal path /api/internal/* /api/docs* /api/redoc* /api/openapi.json
     respond @internal 404
     reverse_proxy justina-web-1:3000 {
         flush_interval -1
