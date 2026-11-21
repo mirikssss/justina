@@ -100,12 +100,16 @@ class MyGovCarPoaAdapter:
         async with browser.page(session) as page:
             base = settings.mygov_base_url.rstrip("/")
             await page.goto(base + sel.LIST_PATH, wait_until="domcontentloaded")
-            try:  # список рисуется после того, как страница расшифровала ответ API
-                await page.wait_for_selector(sel.LIST_READY, timeout=15_000)
+            try:
+                await page.wait_for_selector(sel.LOGGED_IN_MARK, timeout=20_000)
             except PlaywrightTimeout:
                 raise browser.SessionExpired(self.source_id) from None
-            if sel.LOGIN_PATH in page.url or not await page.query_selector(sel.LOGGED_IN_MARK):
+            if sel.LOGIN_PATH in page.url:
                 raise browser.SessionExpired(self.source_id)
+            try:  # карточки рисуются после расшифровки ответа API, позже блока профиля
+                await page.wait_for_selector(sel.CARD, timeout=15_000)
+            except PlaywrightTimeout:
+                pass  # пустой список
             await page.wait_for_load_state("networkidle")
             records = parse_list(await page.content())
             return [RawRecord(r.external_id, {**r.data, **await self._detail(page, base, r.data["detail_href"])})

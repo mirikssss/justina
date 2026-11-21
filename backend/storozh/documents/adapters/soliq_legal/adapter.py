@@ -60,7 +60,7 @@ def _short_hash(*parts: str) -> str:
 
 async def _page_html(session: BrowserSession, slug: str, source_id: str, ready: str = "table") -> str:
     async with browser.page(session) as page:
-        await page.goto(settings.soliq_base_url.rstrip("/") + sel.BASE_PATH + slug, wait_until="domcontentloaded")
+        await page.goto(settings.soliq_base_url.rstrip("/") + sel.BASE_PATH + slug, wait_until="domcontentloaded", timeout=90_000)
         try:
             await page.wait_for_selector(ready, timeout=20_000)
         except PlaywrightTimeout:

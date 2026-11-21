@@ -33,7 +33,7 @@ class MyGovRequestsAdapter:
     complete = True
 
     async def fetch(self, session: BrowserSession) -> list[RawRecord]:
-        return parse_list(await cabinet_html(session, sel.LIST_PATH, sel.LIST_READY, self.source_id))
+        return parse_list(await cabinet_html(session, sel.LIST_PATH, sel.CARD, self.source_id))
 
     def normalize(self, raw: RawRecord) -> NormalizedDocument:
         d = raw.data

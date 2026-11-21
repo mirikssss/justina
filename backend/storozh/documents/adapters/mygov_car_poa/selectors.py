@@ -14,7 +14,8 @@
 LIST_PATH = "/ru/user/requests"  # база — settings.mygov_base_url
 LOGIN_PATH = "/login"  # редирект сюда = сессия истекла
 LOGGED_IN_MARK = ".sbUser"  # блок профиля в боковой панели есть только в залогиненном кабинете
-LIST_READY = f'{LOGGED_IN_MARK}, a[href^="/ru/user/requests/"]'  # список рисуется после расшифровки ответа
+CARD = 'a[href^="/ru/user/requests/"]:not([href$="/draft"])'  # карточка заявки; рисуется после расшифровки ответа API
+LIST_READY = f"{LOGGED_IN_MARK}, {CARD}"
 
 ROW = 'a[href^="/ru/user/requests/"]'
 HREF_PREFIX = "/ru/user/requests/"
