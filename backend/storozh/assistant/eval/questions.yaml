@@ -1,4 +1,4 @@
-# Набор проверки ответов (FR-A-10): 15 вопросов с ожидаемой статьёй.
+# Набор проверки ответов (FR-A-10): 20 вопросов (10 ru + 10 uz) с ожидаемой статьёй.
 # ЧЕРНОВИК — составлен по корпусу, нужна вычитка юристом команды (статьи и формулировки).
 # expect — любая из перечисленных статей в выдаче считается попаданием. Номер пункта регламента = <приложение>-<пункт>.
 # make eval печатает долю попаданий — эту цифру показываем жюри как есть.
@@ -48,3 +48,19 @@
 - q: "Notarius mulkni begonalashtirishni taqiqlashni qachon qo'yadi?"
   lang: uz
   expect: [[notary, "64"]]
+# T10: узбекские пары к русским вопросам — та же ожидаемая статья, чтобы сравнивать языки честно.
+- q: "Bitimga rozi bo'lmasam, notarial harakatni kechiktirish mumkinmi?"
+  lang: uz
+  expect: [[notary, "31"]]
+- q: "Fuqarolik kodeksiga ko'ra ishonchnomaning eng uzoq muddati qancha?"
+  lang: uz
+  expect: [[gk1, "139"]]
+- q: "Vakil ishonchnomani boshqa shaxsga o'tkazishi mumkinmi?"
+  lang: uz
+  expect: [[gk1, "140"], [reg726, "4-27"]]
+- q: "Ishonchnoma qaysi hollarda bekor bo'ladi?"
+  lang: uz
+  expect: [[gk1, "141"], [epoa, "1-22"], [vakolat, "1-16"]]
+- q: "Notariusning rad etishi yoki harakatni kechiktirishi ustidan qanday shikoyat qilinadi?"
+  lang: uz
+  expect: [[notary, "39"]]
