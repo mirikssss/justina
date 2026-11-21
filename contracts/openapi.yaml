@@ -701,6 +701,8 @@ components:
         status: {$ref: "#/components/schemas/AlertStatus"}
         buttons: {type: array, items: {type: string, example: not_me_revoke}}
         created_at: {type: string, format: date-time}
+        detected_at: {type: [string, "null"], format: date-time, description: "Когда источник показал изменение (T11)"}
+        sent_at: {type: [string, "null"], format: date-time, description: "Когда тревога ушла в Telegram (T11)"}
 
     Action:
       type: object

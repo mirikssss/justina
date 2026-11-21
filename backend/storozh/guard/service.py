@@ -69,7 +69,7 @@ async def _raise_alerts(conn: AsyncConnection, event: Event, doc: NormalizedDocu
     for draft in evaluate(event, doc, ctx):
         # объяснение не ждём: его досчитывает потребитель уведомлений (notify_event), FR-G-04
         alert_id = await repo.insert_alert(conn, event_id=event.id, citizen_id=citizen_id, document_id=document_id,
-                                           draft=draft, explanation=None)
+                                           draft=draft, explanation=None, detected_at=event.occurred_at)
         if alert_id is None:
             continue  # повтор события
         # G7 даёт несколько копий на одно событие — в ключ входит получатель
@@ -484,20 +484,44 @@ async def telegram_verdict(chat_id: int, alert_id: UUID, verdict: str) -> AlertV
 NOTIFY_TOPICS = {"alert.created", "action.updated"}
 
 
+async def _claim(key: str) -> bool:
+    """T2: намерение отправить — отдельной транзакцией ДО отправки. False — уже отправлено или результат неизвестен."""
+    async with db.connect("guard") as side:
+        prev = await repo.claim_notify(side, key)
+    if prev == "sending":
+        log.warning("notification %s: previous send was interrupted, delivery unknown — not resending", key)
+    return prev is None
+
+
+async def _finish(key: str, status: str, message_id: str | None = None) -> None:
+    async with db.connect("guard") as side:
+        await repo.finish_notify(side, key, status, message_id)
+
+
 async def notify_event(event: Event, conn: AsyncConnection) -> None:
-    """Потребитель guard.notify: тревога в Telegram ≤ 5 с с шаблоном, объяснение — правкой сообщения (UC-G1)."""
+    """Потребитель guard.notify: тревога в Telegram ≤ 5 с с шаблоном, объяснение — правкой сообщения (UC-G1).
+
+    Внешний эффект идемпотентен (T2): notify_log фиксирует намерение до отправки, повтор события не шлёт дубль.
+    """
     notifier = get_notifier()
     if event.type == "action.updated":
-        if event.data.get("status") in ("done", "failed"):
-            try:
-                await notifier.send_action_update(event.citizen_id, event.data["type"], event.data["status"])
-            except NotLinked:
-                pass
-            except Exception:
-                log.exception("action update not delivered", extra={"action_id": event.data.get("action_id")})
+        status = event.data.get("status")
+        if status not in ("done", "failed"):
+            return
+        key = f"action:{event.data['action_id']}:{status}"
+        if not await _claim(key):
+            return
+        try:
+            await notifier.send_action_update(event.citizen_id, event.data["type"], status)
+            await _finish(key, "sent")
+        except NotLinked:
+            await _finish(key, "skipped")
+        except Exception:
+            log.exception("action update not delivered", extra={"action_id": event.data.get("action_id")})
+            await _finish(key, "skipped")
         return
 
-    alert = await repo.get_alert(conn, UUID(event.data["alert_id"]), for_update=True)
+    alert = await repo.get_alert(conn, UUID(event.data["alert_id"]))
     if alert is None or alert["tg_message_id"] is not None:
         return  # повтор события: сообщение уже ушло
     doc = await _load_document(alert["document_id"]) if alert["rule_id"] != "G7" else None
@@ -508,13 +532,19 @@ async def notify_event(event: Event, conn: AsyncConnection) -> None:
         done, _ = await asyncio.wait({task}, timeout=EXPLAIN_WAIT_S)
         explanation = task.result() if done else None
 
+    key = f"alert:{alert['id']}"
     message_id = None
-    try:
-        message_id = await notifier.send_alert(alert["citizen_id"], alert_view(alert, doc, lang, explanation))
-    except NotLinked:
-        pass
-    except Exception:
-        log.exception("alert not delivered", extra={"alert_id": str(alert["id"])})
+    sent_at = None
+    if await _claim(key):
+        try:
+            message_id = await notifier.send_alert(alert["citizen_id"], alert_view(alert, doc, lang, explanation))
+            sent_at = datetime.now(UTC)
+            await _finish(key, "sent", message_id)
+        except NotLinked:
+            await _finish(key, "skipped")
+        except Exception:
+            log.exception("alert not delivered", extra={"alert_id": str(alert["id"])})
+            await _finish(key, "skipped")
 
     if task is not None and explanation is None:  # не успело: дописываем правкой сообщения
         explanation = await task
@@ -523,4 +553,5 @@ async def notify_event(event: Event, conn: AsyncConnection) -> None:
                 await notifier.edit_alert(alert["citizen_id"], message_id, alert_view(alert, doc, lang, explanation))
             except Exception:
                 log.exception("alert edit failed", extra={"alert_id": str(alert["id"])})
-    await repo.set_alert_delivery(conn, alert["id"], tg_message_id=message_id, explanation=explanation)
+    await repo.set_alert_delivery(conn, alert["id"], tg_message_id=message_id, explanation=explanation,
+                                  sent_at=sent_at)

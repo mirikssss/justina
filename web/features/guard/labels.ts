@@ -81,3 +81,10 @@ export function fmtAgo(iso?: string | null, locale: Locale = "uz"): string {
   const d = Math.floor(h / 24);
   return ru ? `${d} дн назад` : `${d} kun oldin`;
 }
+
+/** T11: «за N с» между двумя метками времени; null, если какой-то нет. */
+export function secondsBetween(from?: string | null, to?: string | null): number | null {
+  if (!from || !to) return null;
+  const ms = new Date(to).getTime() - new Date(from).getTime();
+  return Number.isFinite(ms) && ms >= 0 ? Math.max(1, Math.round(ms / 1000)) : null;
+}

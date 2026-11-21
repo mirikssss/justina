@@ -704,6 +704,16 @@ export interface components {
             buttons: string[];
             /** Format: date-time */
             created_at: string;
+            /**
+             * Format: date-time
+             * @description Когда источник показал изменение (T11)
+             */
+            detected_at?: string | null;
+            /**
+             * Format: date-time
+             * @description Когда тревога ушла в Telegram (T11)
+             */
+            sent_at?: string | null;
         };
         Action: {
             /** Format: uuid */

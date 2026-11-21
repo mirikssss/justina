@@ -253,3 +253,43 @@ async def test_action_done_notifies_chat(tg):
     async with db.connect("guard") as conn:
         await service.notify_event(e, conn)
     assert tg.sent[-1][1].text.startswith(ru.ACTION_DONE)
+
+
+# --- T2: идемпотентная отправка; T11: задержки ---------------------------------------------------------
+
+async def test_interrupted_send_is_not_repeated_blindly(tg):
+    citizen, chat_id = await _citizen(), chat()
+    await _link(citizen, chat_id)
+    alert = await _alert(citizen)
+    async with db.connect("guard") as conn:  # прошлая попытка застолбила отправку и упала до записи результата
+        await conn.execute("INSERT INTO notify_log (key, status) VALUES (%s, 'sending')", (f"alert:{alert['id']}",))
+    await _notify_all(citizen)
+    assert tg.sent == []  # лучше потерять одно сообщение, чем прислать два
+
+
+async def test_failed_send_marked_and_not_retried_forever(tg, monkeypatch):
+    citizen, chat_id = await _citizen(), chat()
+    await _link(citizen, chat_id)
+    alert = await _alert(citizen)
+
+    async def down(chat_id, reply):
+        raise ConnectionError("telegram down")
+
+    monkeypatch.setattr(tg, "send", down)
+    await _notify_all(citizen)  # не бросает: очередь уведомлений не встаёт
+    async with db.connect("guard") as conn:
+        cur = await conn.execute("SELECT status FROM notify_log WHERE key = %s", (f"alert:{alert['id']}",))
+        assert (await cur.fetchone())["status"] == "skipped"
+
+
+async def test_latency_timestamps_recorded(tg):
+    citizen, chat_id = await _citizen(), chat()
+    await _link(citizen, chat_id)
+    alert = await _alert(citizen)
+    [created] = [e for e in await _events(citizen, {"document.created"})]
+    await _notify_all(citizen)
+    row = await _row(alert["id"])
+    assert row["detected_at"] == created.occurred_at
+    assert row["sent_at"] is not None and row["sent_at"] >= row["detected_at"]
+    page = await service.list_alerts(citizen, None, 0)
+    assert page["items"][0]["sent_at"] == row["sent_at"]
