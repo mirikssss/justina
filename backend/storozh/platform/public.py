@@ -2,7 +2,11 @@
 
 from uuid import UUID
 
-__all__ = ["bind_login", "citizen_lang"]
+from storozh.platform import repo
+from storozh.shared import db
+from storozh.shared.auth import Citizen
+
+__all__ = ["bind_login", "citizen_lang", "session_citizen"]
 
 
 async def bind_login(nonce: str, chat_id: int) -> str:
@@ -11,4 +15,13 @@ async def bind_login(nonce: str, chat_id: int) -> str:
 
 
 async def citizen_lang(citizen_id: UUID) -> str:
-    raise NotImplementedError("platform.citizen_lang: Разработчик 2")
+    async with db.connect("platform") as conn:
+        row = await repo.get_citizen(conn, citizen_id)
+    return row["lang"] if row else "uz"
+
+
+async def session_citizen(token_hash: str) -> Citizen | None:
+    """Резолвер для shared.auth.current_citizen: действующая сессия по хешу токена из cookie."""
+    async with db.connect("platform") as conn:
+        row = await repo.session_citizen(conn, token_hash)
+    return Citizen(id=row["citizen_id"], lang=row["lang"]) if row else None
