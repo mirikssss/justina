@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button, Modal } from "@/components/mygov";
 import type { Schemas } from "@/lib/api/client";
+import { useT } from "@/lib/i18n";
 
 import { ACTION_TYPE } from "./labels";
 import { confirmAction } from "./queries";
@@ -19,6 +20,7 @@ function secondsLeft(iso?: string | null): number {
 export function ConfirmModal({ action, onClose, onConfirmed }:
   { action: Schemas["Action"]; onClose: () => void; onConfirmed: (a: Schemas["Action"]) => void }) {
   const router = useRouter();
+  const t = useT();
   const [code, setCode] = useState("");
   const [left, setLeft] = useState(() => secondsLeft(action.confirm_expires_at));
   const [attempts, setAttempts] = useState(action.attempts_left ?? 3);
@@ -28,8 +30,8 @@ export function ConfirmModal({ action, onClose, onConfirmed }:
 
   useEffect(() => inputRef.current?.focus(), []);
   useEffect(() => {
-    const t = setInterval(() => setLeft(secondsLeft(action.confirm_expires_at)), 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setLeft(secondsLeft(action.confirm_expires_at)), 1000);
+    return () => clearInterval(timer);
   }, [action.confirm_expires_at]);
 
   const expired = left <= 0;
@@ -53,15 +55,15 @@ export function ConfirmModal({ action, onClose, onConfirmed }:
       }
       if (status === 429) {
         setAttempts(0);
-        setErr("Urinishlar tugadi. Yangi harakat so'rang.");
+        setErr(t("Urinishlar tugadi. Yangi harakat so'rang."));
       } else {
         setAttempts((a) => Math.max(0, a - 1));
-        setErr("Kod noto'g'ri. Qaytadan kiriting.");
+        setErr(t("Kod noto'g'ri. Qaytadan kiriting."));
       }
       setCode("");
       inputRef.current?.focus();
     } catch {
-      setErr("Tarmoq xatosi. Qaytadan urinib ko'ring.");
+      setErr(t("Tarmoq xatosi. Qaytadan urinib ko'ring."));
     } finally {
       setBusy(false);
     }
@@ -69,26 +71,26 @@ export function ConfirmModal({ action, onClose, onConfirmed }:
 
   return (
     <Modal
-      title="Tasdiqlash kodi"
+      title={t("Tasdiqlash kodi")}
       onClose={onClose}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>Bekor qilish</Button>
+          <Button variant="ghost" onClick={onClose}>{t("Bekor qilish")}</Button>
           <Button onClick={submit} disabled={code.length !== 6 || blocked}>
-            {busy ? "Tekshirilmoqda…" : "Tasdiqlash"}
+            {busy ? t("Tekshirilmoqda…") : t("Tasdiqlash")}
           </Button>
         </>
       }
     >
       <p className="note" style={{ marginBottom: 14 }}>
-        <b>{ACTION_TYPE[action.type]}</b>. Telegramga yuborilgan 6 xonali kodni kiriting.
+        <b>{t(ACTION_TYPE[action.type])}</b>. {t("Telegramga yuborilgan 6 xonali kodni kiriting.")}
       </p>
       <input
         ref={inputRef}
         className="code-in"
         inputMode="numeric"
         autoComplete="one-time-code"
-        aria-label="Tasdiqlash kodi"
+        aria-label={t("Tasdiqlash kodi")}
         maxLength={6}
         value={code}
         disabled={attempts <= 0 || expired}
@@ -98,9 +100,9 @@ export function ConfirmModal({ action, onClose, onConfirmed }:
       />
       <div className="code-meta">
         <span className={expired ? "count err" : "count"}>
-          {expired ? "Muddati tugadi" : `Kod amal qiladi: ${mmss}`}
+          {expired ? t("Muddati tugadi") : t("Kod amal qiladi: {mmss}", { mmss })}
         </span>
-        <span className="count">Urinishlar: {Math.max(0, attempts)}/3</span>
+        <span className="count">{t("Urinishlar: {n}/3", { n: Math.max(0, attempts) })}</span>
       </div>
       {err ? <div className="err" style={{ marginTop: 12 }}>{err}</div> : null}
     </Modal>

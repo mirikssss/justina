@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Badge, Button, Card, EmptyState, Icon, PageHeader, Skeleton, toast } from "@/components/mygov";
 import type { Schemas } from "@/lib/api/client";
+import { useT } from "@/lib/i18n";
 
 import { SCOPE, fmtDateTime } from "./labels";
 import { useAcceptInvite, useFamily, useInvite, useRevokeConsent } from "./queries";
@@ -17,24 +18,25 @@ function initials(name: string) {
 }
 
 export function FamilyPage() {
+  const t = useT();
   const family = useFamily();
   const iShare = family.data?.i_share_with ?? [];
   const sharedWithMe = family.data?.shared_with_me ?? [];
 
   return (
     <>
-      <PageHeader title="Oila" subtitle="Ma'lumotlaringizni kim ko'ra oladi va siz kimning ma'lumotini ko'rasiz" />
+      <PageHeader title={t("Oila")} subtitle={t("Ma'lumotlaringizni kim ko'ra oladi va siz kimning ma'lumotini ko'rasiz")} />
 
       <div className="family-grid">
         <InviteCard />
         <AcceptCard />
       </div>
 
-      <Card title="Men ulashganlar" icon="family">
+      <Card title={t("Men ulashganlar")} icon="family">
         {family.isLoading ? (
           <Skeleton rows={2} />
         ) : iShare.length === 0 ? (
-          <EmptyState title="Hali hech kimga ulashmagansiz" hint="Yuqoridagi kod orqali qarindoshingizni taklif qiling" />
+          <EmptyState title={t("Hali hech kimga ulashmagansiz")} hint={t("Yuqoridagi kod orqali qarindoshingizni taklif qiling")} />
         ) : (
           <div className="consent-list">
             {iShare.map((c) => <ConsentRow key={c.id} consent={c} mine />)}
@@ -42,11 +44,11 @@ export function FamilyPage() {
         )}
       </Card>
 
-      <Card title="Menga ulashilgan" icon="shield2">
+      <Card title={t("Menga ulashilgan")} icon="shield2">
         {family.isLoading ? (
           <Skeleton rows={1} />
         ) : sharedWithMe.length === 0 ? (
-          <EmptyState title="Sizga hech kim ulashmagan" hint="Qarindoshingiz bergan kodni yuqorida kiriting" />
+          <EmptyState title={t("Sizga hech kim ulashmagan")} hint={t("Qarindoshingiz bergan kodni yuqorida kiriting")} />
         ) : (
           <div className="consent-list">
             {sharedWithMe.map((c) => <ConsentRow key={c.id} consent={c} mine={false} />)}
@@ -58,6 +60,7 @@ export function FamilyPage() {
 }
 
 function InviteCard() {
+  const t = useT();
   const invite = useInvite();
   const [scopes, setScopes] = useState<Schemas["ConsentScope"][]>(["receive_alerts"]);
   const [code, setCode] = useState<string | null>(null);
@@ -67,31 +70,31 @@ function InviteCard() {
 
   const make = () =>
     invite.mutate(scopes, {
-      onSuccess: (r) => { setCode(r.code); toast("Taklif kodi yaratildi", "good"); },
-      onError: () => toast("Kodni yaratib bo'lmadi", "crit"),
+      onSuccess: (r) => { setCode(r.code); toast(t("Taklif kodi yaratildi"), "good"); },
+      onError: () => toast(t("Kodni yaratib bo'lmadi"), "crit"),
     });
 
-  const copy = () => code && navigator.clipboard?.writeText(code).then(() => toast("Nusxalandi", "info")).catch(() => {});
+  const copy = () => code && navigator.clipboard?.writeText(code).then(() => toast(t("Nusxalandi"), "info")).catch(() => {});
 
   return (
-    <Card title="Qarindoshni taklif qilish" icon="family">
-      <div className="note" style={{ marginBottom: 12 }}>Qanday huquq berasiz:</div>
+    <Card title={t("Qarindoshni taklif qilish")} icon="family">
+      <div className="note" style={{ marginBottom: 12 }}>{t("Qanday huquq berasiz:")}</div>
       <div className="scope-list">
         {ALL_SCOPES.map((s) => (
           <label key={s} className={`scope${scopes.includes(s) ? " on" : ""}`}>
             <input type="checkbox" checked={scopes.includes(s)} onChange={() => toggle(s)} />
-            <div><b>{SCOPE[s].label}</b><small>{SCOPE[s].hint}</small></div>
+            <div><b>{t(SCOPE[s].label)}</b><small>{t(SCOPE[s].hint)}</small></div>
           </label>
         ))}
       </div>
       {code ? (
         <div className="code-box">
           <span className="tnum">{code}</span>
-          <Button variant="ghost" small onClick={copy}><Icon name="file2" size={16} /> Nusxalash</Button>
+          <Button variant="ghost" small onClick={copy}><Icon name="file2" size={16} /> {t("Nusxalash")}</Button>
         </div>
       ) : (
         <Button onClick={make} disabled={scopes.length === 0 || invite.isPending} className="full">
-          {invite.isPending ? "…" : "Taklif kodini olish"}
+          {invite.isPending ? "…" : t("Taklif kodini olish")}
         </Button>
       )}
     </Card>
@@ -99,27 +102,29 @@ function InviteCard() {
 }
 
 function AcceptCard() {
+  const t = useT();
   const accept = useAcceptInvite();
   const [code, setCode] = useState("");
   const submit = () =>
     accept.mutate(code.trim(), {
-      onSuccess: () => { setCode(""); toast("Ulanildi", "good"); },
-      onError: () => toast("Kod noto'g'ri yoki muddati o'tgan", "crit"),
+      onSuccess: () => { setCode(""); toast(t("Ulanildi"), "good"); },
+      onError: () => toast(t("Kod noto'g'ri yoki muddati o'tgan"), "crit"),
     });
 
   return (
-    <Card title="Taklif kodini kiritish" icon="shield2">
-      <div className="note" style={{ marginBottom: 12 }}>Qarindoshingiz bergan kodni kiriting — uning lentasini ko&apos;rishni boshlaysiz.</div>
+    <Card title={t("Taklif kodini kiritish")} icon="shield2">
+      <div className="note" style={{ marginBottom: 12 }}>{t("Qarindoshingiz bergan kodni kiriting — uning lentasini ko'rishni boshlaysiz.")}</div>
       <input className="code-in wide" value={code} onChange={(e) => setCode(e.target.value)}
-        placeholder="Taklif kodi" onKeyDown={(e) => e.key === "Enter" && submit()} aria-label="Taklif kodi" />
+        placeholder={t("Taklif kodi")} onKeyDown={(e) => e.key === "Enter" && submit()} aria-label={t("Taklif kodi")} />
       <Button onClick={submit} disabled={!code.trim() || accept.isPending} className="full" style={{ marginTop: 12 }}>
-        {accept.isPending ? "…" : "Qabul qilish"}
+        {accept.isPending ? "…" : t("Qabul qilish")}
       </Button>
     </Card>
   );
 }
 
 function ConsentRow({ consent, mine }: { consent: Schemas["Consent"]; mine: boolean }) {
+  const t = useT();
   const revoke = useRevokeConsent();
   const person = mine ? consent.grantee : consent.grantor;
   return (
@@ -128,20 +133,20 @@ function ConsentRow({ consent, mine }: { consent: Schemas["Consent"]; mine: bool
       <div className="dmain">
         <div className="dtitle">{person.display_name}</div>
         <div className="dmeta">
-          {consent.scopes.map((s) => <Badge key={s} tone="info">{SCOPE[s].label}</Badge>)}
+          {consent.scopes.map((s) => <Badge key={s} tone="info">{t(SCOPE[s].label)}</Badge>)}
           <span>{fmtDateTime(consent.granted_at)}</span>
         </div>
       </div>
       {mine ? (
         <Button variant="ghost" small disabled={revoke.isPending}
           onClick={() => revoke.mutate(consent.id, {
-            onSuccess: () => toast("Ruxsat bekor qilindi", "info"),
-            onError: () => toast("Bekor qilib bo'lmadi", "crit"),
+            onSuccess: () => toast(t("Ruxsat bekor qilindi"), "info"),
+            onError: () => toast(t("Bekor qilib bo'lmadi"), "crit"),
           })}>
-          <Icon name="x" size={16} /> Bekor qilish
+          <Icon name="x" size={16} /> {t("Bekor qilish", undefined, "revoke")}
         </Button>
       ) : (
-        <Badge tone="good">Faol</Badge>
+        <Badge tone="good">{t("Faol")}</Badge>
       )}
     </div>
   );

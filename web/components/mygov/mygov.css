@@ -41,7 +41,16 @@ button{font-family:inherit;cursor:pointer}
 .portal-name{font-size:14px;text-transform:uppercase;line-height:1.55;color:var(--fg-2);max-width:260px}
 .topbar-actions{display:flex;align-items:center;gap:16px}
 .topbar-actions .sep{width:1px;height:38px;background:var(--border)}
-.lang{display:flex;flex-direction:column;align-items:center;color:var(--blue);font-size:16px;line-height:1}
+.lang-wrap{position:relative}
+.lang{display:inline-flex;align-items:center;gap:4px;color:var(--blue);font-size:16px;line-height:1;
+  background:none;border:0;cursor:pointer;padding:6px 6px;border-radius:8px}
+.lang:hover{background:var(--light-primary)}
+.lang-menu{position:absolute;top:calc(100% + 8px);right:0;z-index:40;min-width:168px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 32px rgba(15,23,42,.14);padding:6px;display:flex;flex-direction:column;gap:2px}
+.lang-menu button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;
+  background:none;border:0;cursor:pointer;border-radius:8px;padding:9px 11px;font-size:14.5px;color:var(--fg)}
+.lang-menu button:hover{background:var(--light-primary)}
+.lang-menu button.on{color:var(--blue);font-weight:600}
 .proto{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-bg);
   border-radius:8px;padding:4px 9px}
 .btn-login{display:inline-flex;align-items:center;gap:10px;background:var(--btn-gradient);box-shadow:var(--btn-shadow);color:#fff;

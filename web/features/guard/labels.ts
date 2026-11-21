@@ -1,5 +1,6 @@
 import type { Tone } from "@/components/mygov";
 import type { Schemas } from "@/lib/api/client";
+import type { Locale } from "@/lib/i18n";
 
 type Severity = Schemas["Severity"];
 type ActionStatus = Schemas["ActionStatus"];
@@ -68,13 +69,15 @@ export function fmtDateTime(iso?: string | null): string {
   const d = new Date(iso);
   return d.toLocaleString("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
-export function fmtAgo(iso?: string | null): string {
+export function fmtAgo(iso?: string | null, locale: Locale = "uz"): string {
   if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / (60 * SEC));
-  if (m < 1) return "hozir";
-  if (m < 60) return `${m} daq. oldin`;
+  const ru = locale === "ru";
+  if (m < 1) return ru ? "только что" : "hozir";
+  if (m < 60) return ru ? `${m} мин назад` : `${m} daq. oldin`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h} soat oldin`;
-  return `${Math.floor(h / 24)} kun oldin`;
+  if (h < 24) return ru ? `${h} ч назад` : `${h} soat oldin`;
+  const d = Math.floor(h / 24);
+  return ru ? `${d} дн назад` : `${d} kun oldin`;
 }
