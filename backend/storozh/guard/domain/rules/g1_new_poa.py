@@ -1,10 +1,8 @@
 """G1. Новая доверенность, где владелец кабинета — доверитель. Образец для остальных правил."""
 
-from storozh.guard.domain.rules.base import AlertDraft, RuleContext, Severity, rule
-from storozh.shared.contracts import DocumentKind, NormalizedDocument, OwnerRole
+from storozh.guard.domain.rules.base import POA_KINDS, AlertDraft, RuleContext, Severity, rule
+from storozh.shared.contracts import NormalizedDocument, OwnerRole
 from storozh.shared.events import Event
-
-POA_KINDS = {DocumentKind.poa_car, DocumentKind.poa_notarial}
 
 
 @rule("G1")
