@@ -45,3 +45,21 @@ async def document_head(conn: AsyncConnection, document_id: UUID) -> dict | None
         (str(document_id),),
     )
     return await cur.fetchone()
+
+
+async def chat_history(conn: AsyncConnection, citizen_id: UUID, document_id: UUID, limit: int = 100) -> list[dict]:
+    cur = await conn.execute(
+        """SELECT id, role, text, citations, created_at FROM (
+               SELECT * FROM chat_messages WHERE citizen_id = %s AND document_id = %s
+               ORDER BY created_at DESC LIMIT %s) t ORDER BY created_at""",
+        (citizen_id, document_id, limit),
+    )
+    return await cur.fetchall()
+
+
+async def add_chat_message(conn: AsyncConnection, citizen_id: UUID, document_id: UUID, role: str, text: str,
+                           citations: list[dict]) -> None:
+    await conn.execute(
+        "INSERT INTO chat_messages (citizen_id, document_id, role, text, citations) VALUES (%s, %s, %s, %s, %s)",
+        (citizen_id, document_id, role, text, Jsonb(citations)),
+    )

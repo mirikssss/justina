@@ -47,7 +47,10 @@ async def summarize(doc: NormalizedDocument, lang: Lang, *, document_id: UUID | 
 
 async def explain_alert(rule_id: str, doc: NormalizedDocument, lang: Lang) -> str | None:
     """1–2 предложения до 300 знаков за ≤ 5 с. None при ошибке или таймауте — «Сторож» отправит шаблон."""
-    raise NotImplementedError("assistant.explain_alert: Разработчик 2")
+    from storozh.assistant import chat
+    from storozh.assistant.llm.provider import get_llm
+
+    return await chat.explain_alert(get_llm(), rule_id, doc, Lang(lang))
 
 
 async def draft_application(type: DraftType, document_id: UUID, citizen_id: UUID) -> DraftRef:

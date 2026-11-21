@@ -1,12 +1,14 @@
 """Сценарии «Помощника»: фоновое резюме по событиям документов (FR-A-04, NFR-A-01, NFR-A-05)."""
 
 import asyncio
+import json
 import logging
 from uuid import UUID
 
 from psycopg import AsyncConnection
 
 from storozh.assistant import repo, summary
+from storozh.assistant.llm.port import LLMError
 from storozh.assistant.llm.provider import get_llm
 from storozh.documents import public as documents
 from storozh.shared import db, outbox
@@ -79,3 +81,41 @@ async def get_summary(document_id: UUID, citizen_id: UUID, lang: str) -> dict | 
 
 
 _tasks: set[asyncio.Task] = set()
+
+
+# --------------------------------------------------------------------------- чат (FR-A-06)
+
+
+async def owns_document(document_id: UUID, citizen_id: UUID) -> bool:
+    async with db.connect("assistant") as conn:
+        head = await repo.document_head(conn, document_id)
+    return head is not None and head["citizen_id"] == citizen_id
+
+
+async def chat_history(document_id: UUID, citizen_id: UUID) -> list[dict]:
+    async with db.connect("assistant") as conn:
+        rows = await repo.chat_history(conn, citizen_id, document_id)
+    return [{**r, "id": str(r["id"]), "created_at": r["created_at"].isoformat()} for r in rows]
+
+
+async def chat_events(document_id: UUID, citizen_id: UUID, message: str, lang: Lang):
+    """События SSE для POST /assist/chat: token…, citations, done. Обе реплики сохраняются в историю."""
+    from storozh.assistant import chat
+
+    doc = await documents.get_document(document_id)
+    async with db.connect("assistant") as conn:
+        history = await repo.chat_history(conn, citizen_id, document_id, limit=chat.HISTORY_TURNS)
+    result = chat.ChatResult()
+    try:
+        async for piece in chat.answer_stream(get_llm(), doc, message, lang, history, result):
+            yield {"event": "token", "data": piece}
+    except LLMError as e:
+        log.warning("chat failed: %s", e)
+        result.text = result.text or chat.NO_ANSWER[lang]
+        yield {"event": "token", "data": result.text}
+    cites = [c.model_dump() for c in result.citations]
+    yield {"event": "citations", "data": json.dumps(cites, ensure_ascii=False)}
+    async with db.connect("assistant") as conn:
+        await repo.add_chat_message(conn, citizen_id, document_id, "user", message, [])
+        await repo.add_chat_message(conn, citizen_id, document_id, "assistant", result.text, cites)
+    yield {"event": "done", "data": "{}"}
