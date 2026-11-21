@@ -120,6 +120,11 @@ def hmac_pinfl(pinfl: str) -> str:
     return _hmac_hex(settings.pinfl_hmac_key, pinfl.strip().encode())
 
 
+def hmac_chat_id(chat_id: int) -> str:
+    """Поиск привязки Telegram по chat_id без расшифровки (guard.telegram_links.chat_id_hmac)."""
+    return _hmac_hex(settings.pinfl_hmac_key, f"tg:{chat_id}".encode())
+
+
 def sign_internal(body: bytes, ts: int) -> str:
     """Подпись внутреннего запроса: заголовки X-Signature и X-Timestamp."""
     return _hmac_hex(settings.ingest_hmac_key, f"{ts}.".encode() + body)

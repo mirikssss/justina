@@ -25,8 +25,8 @@ SOURCE_TITLES = {a.source_id: a.title for a in ADAPTERS}
 POLL_INTERVALS = {a.source_id: a.poll_interval_s for a in ADAPTERS}
 
 
-class NotFound(Exception):
-    pass
+class NotFound(LookupError):
+    """Документа нет. LookupError — чтобы другие контексты ловили его без импорта documents.service."""
 
 
 # --------------------------------------------------------------------------- ingestion (UC-D2..D4)

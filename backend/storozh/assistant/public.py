@@ -36,15 +36,29 @@ class DraftRef(BaseModel):
     url: str
 
 
-async def summarize(doc: NormalizedDocument, lang: Lang) -> Summary:
-    raise NotImplementedError("assistant.summarize: Разработчик 2")
+async def summarize(doc: NormalizedDocument, lang: Lang, *, document_id: UUID | None = None,
+                    version_no: int = 0) -> Summary:
+    """Резюме документа без кэша (кэш и событие summary.ready — в фоновом воркере «Помощника»)."""
+    from storozh.assistant import summary
+    from storozh.assistant.llm.provider import get_llm
+
+    return await summary.summarize(get_llm(), doc, lang, document_id or UUID(int=0), version_no)
 
 
 async def explain_alert(rule_id: str, doc: NormalizedDocument, lang: Lang) -> str | None:
     """1–2 предложения до 300 знаков за ≤ 5 с. None при ошибке или таймауте — «Сторож» отправит шаблон."""
-    raise NotImplementedError("assistant.explain_alert: Разработчик 2")
+    from storozh.assistant import chat
+    from storozh.assistant.llm.provider import get_llm
+
+    return await chat.explain_alert(get_llm(), rule_id, doc, Lang(lang))
 
 
 async def draft_application(type: DraftType, document_id: UUID, citizen_id: UUID) -> DraftRef:
-    """PDF заявления: реквизиты из документа, текст из шаблона юриста. ФИО и ПИНФЛ — только в PDF, не в модель."""
-    raise NotImplementedError("assistant.draft_application: Разработчик 2")
+    """PDF заявления: реквизиты из документа, текст из шаблона юриста. ФИО и ПИНФЛ — только в PDF, не в модель.
+
+    LookupError — документ не найден или принадлежит другому гражданину. Скачивание: GET /assist/drafts/{id}.
+    """
+    from storozh.assistant.drafts import service
+
+    draft_id = await service.create(type, document_id, citizen_id)
+    return DraftRef(draft_id=draft_id, url=f"/assist/drafts/{draft_id}")

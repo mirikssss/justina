@@ -1,9 +1,9 @@
 """Публичный API модуля retrieval."""
 
 from storozh.assistant.rag.retrieval import index
-from storozh.assistant.rag.retrieval.search import Hit, search
+from storozh.assistant.rag.retrieval.search import Hit, in_lang, search
 
-__all__ = ["Hit", "search", "reindex"]
+__all__ = ["Hit", "in_lang", "search", "reindex"]
 
 
 def reindex(codes: list[str] | None = None, embeddings: bool = True) -> dict:
