@@ -6,3 +6,5 @@ __pycache__/
 .ruff_cache/
 node_modules/
 .next/
+# Local secrets written by `elevenlabs onboard`
+/.env.local
