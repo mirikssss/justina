@@ -9,5 +9,15 @@ export const API_BASE = "/api";
 
 export const api = createClient<paths>({ baseUrl: API_BASE, credentials: "include" });
 
+// Нет сессии (401) — это не «нет связи с API», а «нужно войти»: уводим на /login (UC-P1), кроме самой страницы входа.
+api.use({
+  onResponse({ response }) {
+    if (response.status === 401 && typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+      window.location.assign("/login");
+    }
+    return undefined;
+  },
+});
+
 export type { components, paths } from "./schema";
 export type Schemas = import("./schema").components["schemas"];
