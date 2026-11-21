@@ -46,5 +46,11 @@ async def explain_alert(rule_id: str, doc: NormalizedDocument, lang: Lang) -> st
 
 
 async def draft_application(type: DraftType, document_id: UUID, citizen_id: UUID) -> DraftRef:
-    """PDF заявления: реквизиты из документа, текст из шаблона юриста. ФИО и ПИНФЛ — только в PDF, не в модель."""
-    raise NotImplementedError("assistant.draft_application: Разработчик 2")
+    """PDF заявления: реквизиты из документа, текст из шаблона юриста. ФИО и ПИНФЛ — только в PDF, не в модель.
+
+    LookupError — документ не найден или принадлежит другому гражданину. Скачивание: GET /assist/drafts/{id}.
+    """
+    from storozh.assistant.drafts import service
+
+    draft_id = await service.create(type, document_id, citizen_id)
+    return DraftRef(draft_id=draft_id, url=f"/assist/drafts/{draft_id}")

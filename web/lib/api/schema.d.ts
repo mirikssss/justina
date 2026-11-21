@@ -534,6 +534,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assist/drafts/{draft_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** PDF черновика заявления (ст. 31 или иск) — ссылка из DraftRef.url; только владельцу */
+        get: operations["getDraftPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/assist/search": {
         parameters: {
             query?: never;
@@ -1654,6 +1671,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChatMessage"][];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getDraftPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
                 };
             };
             default: components["responses"]["Problem"];
