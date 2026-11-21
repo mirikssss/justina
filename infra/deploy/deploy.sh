@@ -22,7 +22,8 @@ if [ ! -f .env ]; then
 fi
 
 C="docker compose -p justina -f infra/docker-compose.yml -f infra/docker-compose.prod.yml"
-$C build
+# Сервер общий с соседним проектом: собираем по одному образу и с низким приоритетом, чтобы не душить соседей
+COMPOSE_PARALLEL_LIMIT=1 nice -n 19 $C build
 $C up -d
 
 # Caddy сервера живёт в сети clusteros-net. Подключаем веб вручную: через compose сервис получил бы
