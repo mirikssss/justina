@@ -7,7 +7,22 @@
 ssh -o ControlMaster=auto -o ControlPath=$TMPDIR/cm-dev -o ControlPersist=30m -o ConnectTimeout=60 clusteros-dev
 ```
 
-## Обновить
+## Автодеплой (GitHub Actions)
+
+После зелёного `ci` на `main` workflow `.github/workflows/deploy.yml` сам заливает код архивом и запускает `deploy.sh`,
+потом проверяет сайт. Один раз нужно добавить секреты репозитория (Settings → Secrets and variables → Actions):
+
+| Секрет | Что |
+| --- | --- |
+| `DEPLOY_SSH_KEY` | приватный ключ деплоя; публичная часть в `~/.ssh/authorized_keys` пользователя на сервере |
+| `DEPLOY_HOST` | адрес сервера |
+| `DEPLOY_USER` | пользователь на сервере |
+| `DEPLOY_KNOWN_HOSTS` | вывод `ssh-keyscan -t ed25519 <host>` (проверка отпечатка сервера) |
+
+Без секретов workflow ничего не ломает: пишет предупреждение и пропускает деплой. Ручной запуск с заливкой демо-данных:
+Actions → deploy → Run workflow → `seed`. Ниже — ручной способ на случай, если Actions недоступны.
+
+## Обновить вручную
 
 Репо приватное, токена GitHub на сервере нет — код заливается архивом:
 
