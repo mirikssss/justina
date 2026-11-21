@@ -38,7 +38,8 @@ def test_forged_callback_rejected(monkeypatch):
     op, raw, sig = good.split(".")
     assert callbacks.verify(f"n.{raw}.{sig}") is None  # «Это я» переделали в «Это не я»
     assert callbacks.verify(f"{op}.{callbacks.sign('me', b).split('.')[1]}.{sig}") is None  # чужая тревога
-    assert callbacks.verify(f"{op}.{raw}.{sig[:-1]}A") is None
+    tampered = "B" if sig[-1] != "B" else "C"  # заведомо другой символ (иначе в 1 случае из 64 подпись совпала бы)
+    assert callbacks.verify(f"{op}.{raw}.{sig[:-1]}{tampered}") is None
     for junk in ("", "m", "m.x.y", "x.y.z.w", "m.!!!.sig", "z." + raw + "." + sig):
         assert callbacks.verify(junk) is None
     monkeypatch.setattr(settings, "callback_hmac_key", "other-key")

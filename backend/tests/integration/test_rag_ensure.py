@@ -17,6 +17,8 @@ def calls(monkeypatch):
     monkeypatch.setattr(ens.retrieval, "reindex", lambda: seen.__setitem__("reindex", seen["reindex"] + 1)
                         or {"chunks": 0, "embedded": 0})
     monkeypatch.setattr(ens, "_drop_removed_acts", lambda conn: 0)  # корпус разработчика не трогаем
+    # подменённый ingest ничего не вставляет: считаем корпус непустым, иначе в чистой базе (CI) каждый запуск «загружал» бы заново
+    monkeypatch.setattr(ens, "_counts", lambda conn: {"articles": 10, "chunks": 10, "missing": 0})
     with connection() as conn:
         saved = conn.execute("SELECT key, value, detail FROM rag_state").fetchall()
         conn.execute("DELETE FROM rag_state")
