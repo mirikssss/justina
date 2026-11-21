@@ -20,9 +20,10 @@ from uuid import UUID
 import httpx
 
 from storozh.documents import service
-from storozh.documents.adapters import ADAPTERS, browser
+from storozh.documents.adapters import ADAPTERS, browser, liveness
 from storozh.documents.ports import BrowserSession, SourceAdapter
 from storozh.shared import crypto, db
+from storozh.shared import logging as logs
 from storozh.shared.config import settings
 from storozh.shared.contracts import SourceSnapshot
 
@@ -77,10 +78,11 @@ class Collector:
         wake = self.wakeups.setdefault(key, asyncio.Event())
         failures = 0
         while True:
+            rid_token = logs.request_id.set(uuid.uuid4().hex)
             try:
                 result = await poll_once(citizen_id, adapter, self.client)
                 failures = 0
-                log.info("%s %s: %s", adapter.source_id, citizen_id, result)
+                log.info("poll ok", extra={"source": adapter.source_id, "citizen_id": str(citizen_id), **result})
             except browser.SessionExpired:
                 log.warning("session expired for %s", citizen_id)
                 await service.expire_session(citizen_id)
@@ -92,6 +94,8 @@ class Collector:
                 failures += 1
                 log.exception("%s %s failed (%s in a row)", adapter.source_id, citizen_id, failures)
                 await service.record_poll_error(citizen_id, adapter.source_id, f"{type(e).__name__}: {e}")
+            finally:
+                logs.request_id.reset(rid_token)
             wake.clear()
             try:
                 await asyncio.wait_for(wake.wait(), timeout=next_delay(adapter.poll_interval_s, failures))
@@ -109,6 +113,23 @@ class Collector:
                 key = (citizen_id, adapter.source_id)
                 if key not in self.tasks:
                     self.tasks[key] = asyncio.create_task(self.source_loop(citizen_id, adapter))
+
+    async def check_sessions(self) -> None:
+        """FR-D-02: раз в 5 минут открыть кабинет каждой активной сессией; вход вместо кабинета — session_expired."""
+        for citizen_id in await service.active_citizens():
+            rid_token = logs.request_id.set(uuid.uuid4().hex)
+            try:
+                async with service.session_provider().get(citizen_id) as session:  # под advisory lock, как опрос
+                    alive = await liveness.cabinet_alive(session)
+                if alive is False:
+                    log.warning("session expired", extra={"citizen_id": str(citizen_id), "check": "liveness"})
+                    await service.expire_session(citizen_id)
+                elif alive is None:
+                    log.info("liveness inconclusive", extra={"citizen_id": str(citizen_id)})
+            except Exception:
+                log.exception("liveness check failed", extra={"citizen_id": str(citizen_id)})
+            finally:
+                logs.request_id.reset(rid_token)
 
     async def listen_refresh(self) -> None:
         """NOTIFY storozh_refresh {"citizen_id", "source"} -> разбудить цикл источника."""
@@ -129,7 +150,7 @@ class Collector:
             self.ensure(await service.active_citizens())
             if time.monotonic() - last_check > SESSION_CHECK_S:
                 last_check = time.monotonic()
-                # TODO(Разработчик 1): FR-D-02 — отдельная проверка живости кабинета; сейчас истечение ловит fetch
+                asyncio.create_task(self.check_sessions())
             await asyncio.sleep(DISCOVER_S)
 
 

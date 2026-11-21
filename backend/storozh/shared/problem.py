@@ -5,6 +5,8 @@ import uuid
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from storozh.shared.logging import request_id
+
 PROBLEM = "application/problem+json"
 
 
@@ -27,6 +29,10 @@ def install(app: FastAPI) -> None:
     @app.middleware("http")
     async def _request_id(request: Request, call_next):
         rid = request.headers.get("x-request-id") or uuid.uuid4().hex
-        response = await call_next(request)
+        token = request_id.set(rid)
+        try:
+            response = await call_next(request)
+        finally:
+            request_id.reset(token)
         response.headers["X-Request-Id"] = rid
         return response

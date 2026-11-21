@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=(REPO_DIR / ".env", BASE_DIR / ".env"), extra="ignore")
 
     env: str = "dev"  # dev | demo
+    log_json: bool = True  # False — читаемые текстовые логи при локальной отладке
     database_url: str = "postgresql://storozh:storozh@localhost:5433/storozh"
 
     # --- безопасность (shared/crypto, внутренние эндпоинты) ---

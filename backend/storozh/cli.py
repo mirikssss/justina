@@ -8,6 +8,7 @@ import typer
 from storozh.assistant.rag.cli import app as rag_app
 from storozh.documents.cli import app as documents_app
 from storozh.shared import logging as logs
+from storozh.shared.config import settings
 
 app = typer.Typer(no_args_is_help=True)
 app.add_typer(rag_app, name="rag")
@@ -15,7 +16,7 @@ app.add_typer(documents_app, name="documents")
 
 @app.callback()
 def _setup() -> None:
-    logs.setup(logging.INFO)
+    logs.setup(logging.INFO, as_json=settings.log_json)
 
 @app.command()
 def api(host: str = "0.0.0.0", port: int = 8000, reload: bool = False):

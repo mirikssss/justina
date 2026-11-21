@@ -23,6 +23,11 @@ def create_app() -> FastAPI:
     problem.install(app)
     for r in (platform_router, documents_router, documents_internal, guard_router, assistant_router):
         app.include_router(r)
+
+    @app.get("/healthz", include_in_schema=False)
+    async def healthz() -> dict:
+        return {"status": "ok"}
+
     return app
 
 
