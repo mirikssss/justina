@@ -33,7 +33,8 @@ async def _link_telegram(citizen_id: uuid.UUID, chat_id: int) -> None:
 
 async def test_full_login_flow(demo_env):
     citizen, chat_id = uuid.uuid4(), int(uuid.uuid4().int % 10**9)
-    await service.seed_citizen(citizen, "Тест Т.", "30101900000001", "ru")
+    pinfl = str(uuid.uuid4().int)[:14]
+    await service.seed_citizen(citizen, "Тест Т.", pinfl, "ru")
     await _link_telegram(citizen, chat_id)
 
     transport = httpx.ASGITransport(app=app)
@@ -59,7 +60,7 @@ async def test_full_login_flow(demo_env):
         assert again.headers["location"] == "/login?error=expired"     # повторное открытие ссылки
         assert (await client.get("/me")).status_code == 401
 
-    assert (await platform.citizen_profile(citizen))["pinfl"] == "30101900000001"
+    assert (await platform.citizen_profile(citizen))["pinfl"] == pinfl
 
 
 async def test_unlinked_chat_cannot_login(demo_env):
