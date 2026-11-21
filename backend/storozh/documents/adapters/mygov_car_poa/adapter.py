@@ -45,8 +45,8 @@ def parse_date(text: str | None) -> date | None:
     return None
 
 
-def parse_list(page_html: str) -> list[RawRecord]:
-    """Карточки «Мои заявки» -> записи об e-доверенностях. Селекторы — в selectors.py."""
+def parse_cards(page_html: str) -> list[dict]:
+    """Все карточки «Мои заявки» (кроме «Черновиков») -> словари полей. Селекторы — в selectors.py."""
     tree = lxml_html.fromstring(page_html)
     out = []
     for row in tree.cssselect(sel.ROW):
@@ -57,14 +57,25 @@ def parse_list(page_html: str) -> list[RawRecord]:
         for key, css in sel.FIELDS.items():
             found = row.cssselect(css)
             data[key] = found[0].text_content().strip() if found else None
-        if sel.TITLE_MARK not in (data["title"] or "").lower():
-            continue
         data["number"] = (data["number"] or "").lstrip("#").strip() or href[len(sel.HREF_PREFIX):].strip("/")
         icon = row.cssselect(sel.DATE_ICON)
         data["issued_at"] = icon[0].getparent().text_content().strip() if icon else None
-        data["direction"] = "Выдана мной"  # «Мои заявки» — только заявки самого человека
         data["detail_href"] = href
-        out.append(RawRecord(external_id=data["number"], data=data))
+        out.append(data)
+    return out
+
+
+def is_poa_title(title: str | None) -> bool:
+    return sel.TITLE_MARK in (title or "").lower()
+
+
+def parse_list(page_html: str) -> list[RawRecord]:
+    """Карточки заявок -> записи об e-доверенностях (остальные заявки читает mygov.requests)."""
+    out = []
+    for data in parse_cards(page_html):
+        if is_poa_title(data["title"]):
+            data["direction"] = "Выдана мной"  # «Мои заявки» — только заявки самого человека
+            out.append(RawRecord(external_id=data["number"], data=data))
     return out
 
 

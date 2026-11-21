@@ -3,8 +3,8 @@
 import re
 from dataclasses import dataclass
 
-REGISTRIES = {"notarius", "kadastr", "mvd", "katm", "mib", "mehnat"}
-TYPES = {"act", "poa", "ban", "object", "vehicle", "loan", "case", "contract"}
+REGISTRIES = {"notarius", "kadastr", "mvd", "katm", "mib", "mehnat", "mygov", "soliq"}
+TYPES = {"act", "poa", "ban", "object", "vehicle", "loan", "case", "contract", "request", "notice", "company", "tax"}
 
 _RE = re.compile(r"^uz:(?P<registry>[a-z]+):(?P<type>[a-z]+):(?P<number>[^\s:][^\s]*)$")
 

@@ -8,7 +8,7 @@
   "required": ["uri", "kind", "source", "title", "status", "owner_role", "source_ref"],
   "properties": {
     "uri": {"type": "string", "pattern": "^uz:(notarius|kadastr|mvd|katm|mib|mehnat):(act|poa|ban|object|vehicle|loan|case|contract):\\S+$"},
-    "kind": {"enum": ["notarial_act", "poa_notarial", "poa_car", "ban", "real_estate_right", "vehicle", "loan", "enforcement_case", "labor_contract"]},
+    "kind": {"enum": ["notarial_act", "poa_notarial", "poa_car", "ban", "real_estate_right", "vehicle", "loan", "enforcement_case", "labor_contract", "application", "notification", "company", "tax_assessment"]},
     "source": {"type": "string", "pattern": "^[a-z0-9_]+\\.[a-z0-9_]+$"},
     "title": {"type": "string"},
     "status": {"enum": ["active", "completed", "revoked", "expired", "unknown"]},

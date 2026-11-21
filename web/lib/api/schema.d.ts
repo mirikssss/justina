@@ -581,7 +581,7 @@ export interface components {
         /** @enum {unknown} */
         Lang: "uz" | "ru";
         /** @enum {unknown} */
-        DocumentKind: "notarial_act" | "poa_notarial" | "poa_car" | "ban" | "real_estate_right" | "vehicle" | "loan" | "enforcement_case" | "labor_contract";
+        DocumentKind: "notarial_act" | "poa_notarial" | "poa_car" | "ban" | "real_estate_right" | "vehicle" | "loan" | "enforcement_case" | "labor_contract" | "application" | "notification" | "company" | "tax_assessment";
         /** @enum {unknown} */
         DocumentStatus: "active" | "completed" | "revoked" | "expired" | "unknown";
         /** @enum {unknown} */
@@ -785,7 +785,7 @@ export interface components {
         "normalized_document.schema": {
             uri: string;
             /** @enum {unknown} */
-            kind: "notarial_act" | "poa_notarial" | "poa_car" | "ban" | "real_estate_right" | "vehicle" | "loan" | "enforcement_case" | "labor_contract";
+            kind: "notarial_act" | "poa_notarial" | "poa_car" | "ban" | "real_estate_right" | "vehicle" | "loan" | "enforcement_case" | "labor_contract" | "application" | "notification" | "company" | "tax_assessment";
             source: string;
             title: string;
             /** @enum {unknown} */

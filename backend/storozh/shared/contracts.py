@@ -28,6 +28,10 @@ class DocumentKind(StrEnum):
     loan = "loan"
     enforcement_case = "enforcement_case"
     labor_contract = "labor_contract"
+    application = "application"
+    notification = "notification"
+    company = "company"
+    tax_assessment = "tax_assessment"
 
 
 class DocumentStatus(StrEnum):

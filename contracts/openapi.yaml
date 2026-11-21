@@ -594,7 +594,7 @@ components:
         detail: {type: string}
 
     Lang: {enum: [uz, ru]}
-    DocumentKind: {enum: [notarial_act, poa_notarial, poa_car, ban, real_estate_right, vehicle, loan, enforcement_case, labor_contract]}
+    DocumentKind: {enum: [notarial_act, poa_notarial, poa_car, ban, real_estate_right, vehicle, loan, enforcement_case, labor_contract, application, notification, company, tax_assessment]}
     DocumentStatus: {enum: [active, completed, revoked, expired, unknown]}
     ActionType: {enum: [revoke_car_poa]}
     ActionStatus: {enum: [proposed, awaiting_confirmation, confirmed, executing, verifying, done, failed, expired]}

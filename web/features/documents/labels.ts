@@ -14,6 +14,10 @@ export const KIND: Record<Kind, { label: string; icon: IconName }> = {
   loan: { label: "Kredit", icon: "credit" },
   enforcement_case: { label: "Ijro ishi", icon: "gavel" },
   labor_contract: { label: "Mehnat shartnomasi", icon: "briefcase" },
+  application: { label: "Davlat xizmati arizasi", icon: "doc" },
+  notification: { label: "Bildirishnoma", icon: "reg" },
+  company: { label: "Yuridik shaxs", icon: "briefcase" },
+  tax_assessment: { label: "Soliq hisob-kitobi", icon: "credit" },
 };
 
 export const STATUS: Record<Status, { label: string; tone: Tone }> = {
@@ -27,6 +31,8 @@ export const STATUS: Record<Status, { label: string; tone: Tone }> = {
 export const SOURCE: Record<string, { label: string; icon: IconName }> = {
   "mygov.car_poa": { label: "my.gov.uz · avtomobilga e-ishonchnomalar", icon: "car" },
   "mygov.notarial_history": { label: "Notarial harakatlar tarixi", icon: "reg" },
+  "mygov.requests": { label: "my.gov.uz · mening arizalarim", icon: "doc" },
+  "mygov.notifications": { label: "my.gov.uz · bildirishnomalar", icon: "reg" },
   "vakolat.check": { label: "Vakolat.uz · ishonchnomani tekshirish", icon: "shield" },
 };
 
