@@ -19,7 +19,7 @@ from storozh.assistant.llm.rewrite import rewrite
 from storozh.assistant.pii import mask
 from storozh.assistant.public import Citation
 from storozh.assistant.rag.retrieval.service import Hit
-from storozh.assistant.summary import document_block
+from storozh.assistant.summary import KIND_QUERIES, document_block
 from storozh.shared.contracts import Lang, NormalizedDocument
 
 log = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ class ChatResult:
 class CitationRewriter:
     """Поток текста -> метки [[код:номер]] заменяются на [n]; неизвестные вырезаются. Работает по кускам."""
 
-    _PARTIAL = re.compile(r"\[(\[[a-z0-9:-]*)?$")
+    _PARTIAL = re.compile(r"\[(\[[a-z0-9:-]*\]?)?$")  # «[», «[[gk1:1», «[[gk1:141]» — ждём конец метки
 
     def __init__(self, hits: list[Hit], lang: str | None = None) -> None:
         self.lang = lang
@@ -90,6 +90,30 @@ class CitationRewriter:
         return [citations.to_citation(self.by_key[k], self.lang) for k in self.order]
 
 
+REWRITE_BUDGET_S = 1.5  # первый токен ≤ 3 с (NFR-A-01): дольше переписывание не ждём
+
+
+async def _find_norms(llm: LLM, doc: NormalizedDocument | None, q: str, lang: Lang) -> list[Hit]:
+    """Поиск по самому вопросу (и типовым запросам для вида документа) идёт сразу, параллельно с переписыванием.
+
+    Успело переписывание за REWRITE_BUDGET_S — добавляем его запросы; нет — отвечаем по уже найденному.
+    """
+    kinds = [doc.kind] if doc else None
+    base = [q, *KIND_QUERIES.get(doc.kind, [])[:2]] if doc else [q]
+    context = f"{doc.title} ({doc.kind.value})" if doc else ""
+    rewriting = asyncio.create_task(rewrite(llm, q, context))
+    first = await retrieve(base, kinds=kinds, k=8, lang=lang.value)
+    try:
+        budget = REWRITE_BUDGET_S if doc else 6.0  # без документа (/assist/ask) скорость не критична
+        extra = (await asyncio.wait_for(asyncio.shield(rewriting), budget))[1:]
+    except TimeoutError:
+        rewriting.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
+        return first
+    if not extra:
+        return first
+    return await retrieve([*base, *extra], kinds=kinds, k=8, lang=lang.value)
+
+
 async def answer_stream(llm: LLM, doc: NormalizedDocument | None, question: str, lang: Lang,
                         history: list[dict[str, Any]] | None = None,
                         result: ChatResult | None = None) -> AsyncIterator[str]:
@@ -97,9 +121,7 @@ async def answer_stream(llm: LLM, doc: NormalizedDocument | None, question: str,
     result = result if result is not None else ChatResult()
     names = [p.name_masked for p in doc.parties] if doc else []
     q = mask(question, names=names).text  # человек мог вставить свой ПИНФЛ или телефон в вопрос
-    context = f"{doc.title} ({doc.kind.value})" if doc else ""
-    queries = await rewrite(llm, q, context)
-    hits = await retrieve(queries, kinds=[doc.kind] if doc else None, k=8, lang=lang.value)
+    hits = await _find_norms(llm, doc, q, lang)
     if not hits:
         result.text = NO_ANSWER[lang]
         yield result.text

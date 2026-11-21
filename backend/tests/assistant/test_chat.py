@@ -52,7 +52,8 @@ def fake_retrieve(monkeypatch):
 
 def test_rewriter_handles_split_markers_and_drops_unknown():
     rw = chat.CitationRewriter(HITS)
-    out = "".join(rw.feed(c) for c in ["Отменить можно [[gk", "1:141]] в любое время", " [[uk:1]] и [[epoa:1-2", "3]]."])
+    out = "".join(rw.feed(c) for c in ["Отменить можно [[gk", "1:141]", "] в любое время", " [[uk:1]] и [[epoa:1-2",
+                                         "3]]."])
     out += rw.flush()
     assert out == "Отменить можно [1] в любое время  и [2]."
     assert [c.article for c in rw.citations()] == ["ст. 141", "п. 23 прил. 1"]
