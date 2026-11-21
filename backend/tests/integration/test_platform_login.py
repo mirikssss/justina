@@ -63,13 +63,33 @@ async def test_full_login_flow(demo_env):
     assert (await platform.citizen_profile(citizen))["pinfl"] == pinfl
 
 
-async def test_unlinked_chat_cannot_login(demo_env):
+async def test_unlinked_chat_cannot_login_when_signup_disabled(demo_env, monkeypatch):
+    monkeypatch.setattr(settings, "telegram_signup", False)
     nonce_link = await service.start_login()
     with pytest.raises(platform.LoginError):
-        await platform.bind_login(nonce_link.split("login_")[1], 1)
+        await platform.bind_login(nonce_link.split("login_")[1], int(uuid.uuid4().int % 10**9))
 
 
 async def test_audit_verify_endpoint():
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="https://test") as client:
         assert (await client.get("/audit/verify")).json() == {"ok": True, "broken_seq": None}
+
+
+async def test_first_login_from_new_telegram_registers_citizen(demo_env):
+    """Новый Telegram без привязки: бот заводит гражданина, привязывает чат и выдаёт ссылку входа; тот же чат — тот же гражданин."""
+    from storozh.guard import public as guard
+
+    chat_id = int(uuid.uuid4().int % 10**9)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="https://test") as client:
+        nonce = (await client.post("/auth/telegram/start")).json()["deep_link"].split("start=login_")[1]
+        url = await platform.bind_login(nonce, chat_id, "Иван Тестов", "ru")
+        r = await client.get("/auth/callback", params={"token": parse_qs(urlsplit(url).query)["token"][0]})
+        assert r.status_code == 302 and SESSION_COOKIE in r.cookies
+        me = (await client.get("/me")).json()
+        assert me["display_name"] == "Иван Тестов" and me["lang"] == "ru"
+    first = await guard.citizen_by_chat(chat_id)
+    nonce2 = (await service.start_login()).split("login_")[1]
+    await platform.bind_login(nonce2, chat_id, "Иван Тестов", "ru")
+    assert await guard.citizen_by_chat(chat_id) == first == uuid.UUID(me["id"])

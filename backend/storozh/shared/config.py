@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     # --- каналы ---
     telegram_bot_token: str = ""
     telegram_bot_username: str = ""
+    telegram_signup: bool = True  # первый вход через бота заводит гражданина (иначе только уже привязанные Telegram)
     public_web_url: str = "http://localhost:3000"
     api_internal_url: str = "http://localhost:8000"  # куда сборщик шлёт снимки
     mygov_base_url: str = "https://my.gov.uz"  # для разработки: http://localhost:8765 (макет, documents mockportal)

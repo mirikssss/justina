@@ -26,7 +26,7 @@ def _lang(tg_lang: str | None) -> str:
     return "ru" if (tg_lang or "").startswith("ru") else "uz"
 
 
-async def on_start(chat_id: int, payload: str | None, tg_lang: str | None = None) -> Reply:
+async def on_start(chat_id: int, payload: str | None, tg_lang: str | None = None, tg_name: str | None = None) -> Reply:
     lang = _lang(tg_lang)
     payload = (payload or "").strip()
     if payload.startswith("link_"):
@@ -37,7 +37,7 @@ async def on_start(chat_id: int, payload: str | None, tg_lang: str | None = None
         return Reply({"ok": t.LINK_OK, "taken": t.LINK_TAKEN}.get(result, t.LINK_BAD))
     if payload.startswith("login_"):
         try:
-            url = await platform.bind_login(payload.removeprefix("login_"), chat_id)
+            url = await platform.bind_login(payload.removeprefix("login_"), chat_id, tg_name, lang)
         except platform.LoginError:
             return Reply(texts(lang).LOGIN_BAD)
         citizen_id = await citizen_by_chat(chat_id)
@@ -84,7 +84,8 @@ async def run() -> None:
     @router.message(CommandStart())
     async def start(message: Message, command: CommandObject) -> None:
         tg_lang = message.from_user.language_code if message.from_user else None
-        reply = await on_start(message.chat.id, command.args, tg_lang)
+        tg_name = message.from_user.full_name if message.from_user else None
+        reply = await on_start(message.chat.id, command.args, tg_lang, tg_name)
         await message.answer(reply.text, reply_markup=markup(reply), disable_web_page_preview=True)
 
     @router.message()

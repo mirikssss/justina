@@ -47,12 +47,32 @@ async def issue_login_link(nonce: str | None, citizen_id: UUID, chat_id: int | N
     return f"{settings.public_web_url}/api/auth/callback?token={token}"
 
 
-async def bind_login(nonce: str, chat_id: int) -> str:
-    """Шаг 2 (бот): /start login_<nonce> -> гражданин по привязанному chat_id -> ссылка входа."""
+async def bind_login(nonce: str, chat_id: int, display_name: str | None = None, lang: str = "uz") -> str:
+    """Шаг 2 (бот): /start login_<nonce> -> гражданин по привязанному chat_id -> ссылка входа.
+
+    Первый вход с нового Telegram: если регистрация через Telegram разрешена, заводим гражданина и привязываем чат
+    (личность подтверждает сам Telegram). Иначе вход был бы возможен только после привязки, а привязка — только после входа.
+    """
     citizen_id = await guard.citizen_by_chat(chat_id)
     if citizen_id is None:
-        raise LoginError("telegram chat is not linked to a citizen")
+        if not settings.telegram_signup:
+            raise LoginError("telegram chat is not linked to a citizen")
+        citizen_id = await register_telegram_citizen(chat_id, display_name or "Fuqaro", lang)
     return await issue_login_link(nonce, citizen_id, chat_id)
+
+
+async def register_telegram_citizen(chat_id: int, display_name: str, lang: str) -> UUID:
+    """Новый гражданин для Telegram-аккаунта. ПИНФЛ неизвестен: вместо него стабильный технический идентификатор чата."""
+    import uuid
+
+    citizen_id = uuid.uuid4()
+    placeholder = f"tg:{chat_id}"
+    async with db.connect("platform") as conn:
+        await repo.upsert_citizen(conn, citizen_id, crypto.hmac_pinfl(placeholder),
+                                  crypto.encrypt(citizen_id, placeholder.encode()), display_name[:80], lang)
+        await audit.write(conn, actor=f"citizen:{citizen_id}", action="citizen.registered", target="telegram")
+    await guard.link_chat_to_citizen(citizen_id, chat_id)
+    return citizen_id
 
 
 async def consume_login(token: str) -> str:

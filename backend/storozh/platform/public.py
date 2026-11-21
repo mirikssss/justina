@@ -10,12 +10,12 @@ from storozh.shared.auth import Citizen
 __all__ = ["LoginError", "bind_login", "citizen_lang", "citizen_profile", "session_citizen"]
 
 
-async def bind_login(nonce: str, chat_id: int) -> str:
+async def bind_login(nonce: str, chat_id: int, display_name: str | None = None, lang: str = "uz") -> str:
     """Бот получил /start login_<nonce>: привязать вход к гражданину, вернуть одноразовую ссылку на /auth/callback.
 
     LoginError — ссылка устарела/использована или этот Telegram не привязан (бот отвечает текстом).
     """
-    return await service.bind_login(nonce, chat_id)
+    return await service.bind_login(nonce, chat_id, display_name, lang)
 
 
 async def citizen_lang(citizen_id: UUID) -> str:

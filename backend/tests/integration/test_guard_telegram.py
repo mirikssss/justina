@@ -152,7 +152,10 @@ async def test_login_via_bot_returns_one_time_link():
     assert (await bot.on_start(chat_id, f"login_{nonce}", "ru")).text == ru.LOGIN_BAD  # nonce одноразовый
 
 
-async def test_login_from_unlinked_chat_rejected():
+async def test_login_from_unlinked_chat_rejected_when_signup_disabled(monkeypatch):
+    from storozh.shared.config import settings
+
+    monkeypatch.setattr(settings, "telegram_signup", False)
     nonce = (await platform_service.start_login()).split("start=login_")[1]
     assert (await bot.on_start(chat(), f"login_{nonce}")).text == uz.LOGIN_BAD
 
