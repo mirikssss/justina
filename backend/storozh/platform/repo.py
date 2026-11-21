@@ -67,3 +67,32 @@ async def use_login_token(conn: AsyncConnection, token_hash: str) -> UUID | None
     )
     row = await cur.fetchone()
     return row["citizen_id"] if row else None
+
+
+# --- T9: согласия и удаление -------------------------------------------------------------------------
+
+async def current_consent(conn: AsyncConnection, citizen_id: UUID) -> dict | None:
+    cur = await conn.execute(
+        """SELECT version, scopes, accepted_at FROM consents_log
+           WHERE citizen_id = %s AND withdrawn_at IS NULL ORDER BY accepted_at DESC LIMIT 1""",
+        (citizen_id,),
+    )
+    return await cur.fetchone()
+
+
+async def add_consent(conn: AsyncConnection, citizen_id: UUID, version: str, scopes: list[str]) -> dict:
+    cur = await conn.execute(
+        "INSERT INTO consents_log (citizen_id, version, scopes) VALUES (%s, %s, %s) RETURNING version, scopes, accepted_at",
+        (citizen_id, version, scopes),
+    )
+    return await cur.fetchone()
+
+
+async def withdraw_consents(conn: AsyncConnection, citizen_id: UUID) -> None:
+    await conn.execute("UPDATE consents_log SET withdrawn_at = now() WHERE citizen_id = %s AND withdrawn_at IS NULL",
+                       (citizen_id,))
+
+
+async def revoke_all_sessions(conn: AsyncConnection, citizen_id: UUID) -> None:
+    await conn.execute("UPDATE web_sessions SET revoked_at = now() WHERE citizen_id = %s AND revoked_at IS NULL",
+                       (citizen_id,))

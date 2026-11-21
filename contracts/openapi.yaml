@@ -76,6 +76,45 @@ paths:
             application/json:
               schema: {$ref: "#/components/schemas/Me"}
         default: {$ref: "#/components/responses/Problem"}
+  /me/consent:
+    get:
+      tags: [platform]
+      operationId: getConsent
+      summary: Согласие на обработку данных (T9, ЗРУ-547) — принято ли текущей версии
+      responses:
+        "200":
+          description: Состояние согласия
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DataConsent"}
+        default: {$ref: "#/components/responses/Problem"}
+    post:
+      tags: [platform]
+      operationId: acceptConsent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version: {type: string}
+      responses:
+        "200":
+          description: Согласие записано в журнал
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DataConsent"}
+        default: {$ref: "#/components/responses/Problem"}
+  /me/data:
+    delete:
+      tags: [platform]
+      operationId: deleteMyData
+      summary: Криптоудаление данных гражданина (ключ данных стирается) и выход со всех устройств (T9)
+      responses:
+        "204": {description: Данные удалены}
+        default: {$ref: "#/components/responses/Problem"}
   /stream:
     get:
       tags: [platform]
@@ -701,6 +740,8 @@ components:
         status: {$ref: "#/components/schemas/AlertStatus"}
         buttons: {type: array, items: {type: string, example: not_me_revoke}}
         created_at: {type: string, format: date-time}
+        detected_at: {type: [string, "null"], format: date-time, description: "Когда источник показал изменение (T11)"}
+        sent_at: {type: [string, "null"], format: date-time, description: "Когда тревога ушла в Telegram (T11)"}
 
     Action:
       type: object
@@ -725,6 +766,15 @@ components:
           properties:
             verified_status: {type: string, example: revoked}
             error: {type: [string, "null"]}
+
+    DataConsent:
+      type: object
+      required: [version, scopes, accepted]
+      properties:
+        version: {type: string, example: "2026-11-21"}
+        scopes: {type: array, items: {type: string, example: read_cabinets}}
+        accepted: {type: boolean}
+        accepted_at: {type: [string, "null"], format: date-time}
 
     DraftRef:
       type: object

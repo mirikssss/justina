@@ -1,3 +1,5 @@
+import os
+
 import psycopg
 import pytest
 
@@ -12,6 +14,10 @@ def db_available() -> bool:
     except psycopg.OperationalError:
         return False
 
+
+# T3: в CI (REQUIRE_DB=1) отсутствие базы — ошибка, а не тихий пропуск интеграционных тестов.
+if os.environ.get("REQUIRE_DB") == "1" and not db_available():
+    raise RuntimeError("REQUIRE_DB=1, но базы с миграциями нет: интеграционные тесты не должны пропускаться")
 
 requires_db = pytest.mark.skipif(not db_available(), reason="нет базы с миграциями (make db)")
 

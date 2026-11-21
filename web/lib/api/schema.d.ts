@@ -86,6 +86,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Согласие на обработку данных (T9, ЗРУ-547) — принято ли текущей версии */
+        get: operations["getConsent"];
+        put?: never;
+        post: operations["acceptConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Криптоудаление данных гражданина (ключ данных стирается) и выход со всех устройств (T9) */
+        delete: operations["deleteMyData"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stream": {
         parameters: {
             query?: never;
@@ -704,6 +738,16 @@ export interface components {
             buttons: string[];
             /** Format: date-time */
             created_at: string;
+            /**
+             * Format: date-time
+             * @description Когда источник показал изменение (T11)
+             */
+            detected_at?: string | null;
+            /**
+             * Format: date-time
+             * @description Когда тревога ушла в Telegram (T11)
+             */
+            sent_at?: string | null;
         };
         Action: {
             /** Format: uuid */
@@ -725,6 +769,14 @@ export interface components {
                 verified_status?: string;
                 error?: string | null;
             } | null;
+        };
+        DataConsent: {
+            /** @example 2026-11-21 */
+            version: string;
+            scopes: string[];
+            accepted: boolean;
+            /** Format: date-time */
+            accepted_at?: string | null;
         };
         DraftRef: {
             /** Format: uuid */
@@ -983,6 +1035,73 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Me"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Состояние согласия */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataConsent"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    acceptConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    version: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Согласие записано в журнал */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataConsent"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteMyData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Данные удалены */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };

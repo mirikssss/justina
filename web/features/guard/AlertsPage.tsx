@@ -7,7 +7,7 @@ import { Badge, Button, Chips, EmptyState, Icon, PageHeader, Skeleton, toast } f
 import type { Schemas } from "@/lib/api/client";
 import { useLocale, useT } from "@/lib/i18n";
 
-import { ALERT_STATUS, RULE, SEVERITY, fmtAgo } from "./labels";
+import { ALERT_STATUS, RULE, SEVERITY, fmtAgo, secondsBetween } from "./labels";
 import { useAlerts, useAlertsLive, useSetVerdict, useTelegramLink } from "./queries";
 
 // FR-G-14: список тревог по важности, кнопки «Это я» / «Это не я». Живёт на alert.created (NFR-G-01).
@@ -77,6 +77,7 @@ function AlertRow({ alert }: { alert: Schemas["Alert"] }) {
   const sev = SEVERITY[alert.severity];
   const verdict = useSetVerdict();
   const closed = alert.status === "closed" || alert.verdict !== null;
+  const latency = secondsBetween(alert.detected_at, alert.sent_at); // T11: доказательство «≤ 5 с» на экране
 
   const vote = (v: "me" | "not_me", after?: () => void) =>
     verdict.mutate(
@@ -102,6 +103,7 @@ function AlertRow({ alert }: { alert: Schemas["Alert"] }) {
           <Badge tone={sev.tone}>{t(sev.label)}</Badge>
           <span>{RULE[alert.rule_id] ? t(RULE[alert.rule_id]) : alert.rule_id}</span>
           <span>{fmtAgo(alert.created_at, locale)}</span>
+          {latency !== null ? <span title={t("Hodisadan Telegramgacha")}>· {t("Telegramga {n} s da", { n: latency })}</span> : null}
           {closed ? <span>· {t(ALERT_STATUS[alert.status])}</span> : null}
         </div>
         {alert.explanation ? <p className="note" style={{ marginTop: 8 }}>{alert.explanation}</p> : null}

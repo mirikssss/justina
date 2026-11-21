@@ -9,20 +9,21 @@ from psycopg.types.json import Jsonb
 
 from storozh.guard.domain.rules import AlertDraft
 
-_ALERT_COLS = "id, document_id, rule_id, severity, title, explanation, verdict, status, buttons, created_at"
+_ALERT_COLS = ("id, document_id, rule_id, severity, title, explanation, verdict, status, buttons, created_at, "
+               "detected_at, sent_at")
 _SEVERITY_ORDER = "CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 ELSE 2 END"
 
 
 async def insert_alert(conn: AsyncConnection, *, event_id: UUID, citizen_id: UUID, document_id: UUID | None,
-                       draft: AlertDraft, explanation: str | None) -> UUID | None:
+                       draft: AlertDraft, explanation: str | None, detected_at=None) -> UUID | None:
     """Новая тревога. None — такая уже есть (повтор события: FR-G-01, NFR-G-03)."""
     cur = await conn.execute(
         """INSERT INTO alerts (event_id, citizen_id, document_id, rule_id, rule_version, severity, title,
-                               explanation, buttons)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                               explanation, buttons, detected_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, coalesce(%s, now()))
            ON CONFLICT (event_id, rule_id, citizen_id) DO NOTHING RETURNING id""",
         (event_id, citizen_id, document_id, draft.rule_id, draft.rule_version, str(draft.severity), draft.title,
-         explanation, list(draft.buttons)),
+         explanation, list(draft.buttons), detected_at),
     )
     row = await cur.fetchone()
     return row["id"] if row else None
@@ -242,9 +243,26 @@ async def get_alert(conn: AsyncConnection, alert_id: UUID, *, for_update: bool =
 
 
 async def set_alert_delivery(conn: AsyncConnection, alert_id: UUID, *, tg_message_id: str | None,
-                             explanation: str | None) -> None:
+                             explanation: str | None, sent_at=None) -> None:
     await conn.execute(
         """UPDATE alerts SET tg_message_id = COALESCE(%s, tg_message_id),
-                             explanation = COALESCE(%s, explanation) WHERE id = %s""",
-        (tg_message_id, explanation, alert_id),
+                             explanation = COALESCE(%s, explanation),
+                             sent_at = COALESCE(sent_at, %s) WHERE id = %s""",
+        (tg_message_id, explanation, sent_at, alert_id),
     )
+
+
+async def claim_notify(conn: AsyncConnection, key: str) -> str | None:
+    """T2: застолбить отправку. None — можно слать; иначе статус прежней попытки ('sending' | 'sent' | 'skipped')."""
+    cur = await conn.execute(
+        "INSERT INTO notify_log (key, status) VALUES (%s, 'sending') ON CONFLICT (key) DO NOTHING RETURNING key",
+        (key,))
+    if await cur.fetchone() is not None:
+        return None
+    cur = await conn.execute("SELECT status FROM notify_log WHERE key = %s", (key,))
+    return (await cur.fetchone())["status"]
+
+
+async def finish_notify(conn: AsyncConnection, key: str, status: str, message_id: str | None = None) -> None:
+    await conn.execute("UPDATE notify_log SET status = %s, message_id = %s, updated_at = now() WHERE key = %s",
+                       (status, message_id, key))

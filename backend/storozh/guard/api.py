@@ -119,8 +119,12 @@ async def action_evidence(action_id: UUID, citizen: Citizen = Depends(current_ci
 
 
 @router.post("/drafts")
-async def create_draft(body: DraftIn):
-    raise NotImplementedError("POST /guard/drafts")
+async def create_draft(body: DraftIn, citizen: Citizen = Depends(current_citizen)):
+    """FR-G-12 (T12): ст. 31 или иск -> assistant.draft_application -> ссылка на PDF (GET /assist/drafts/{id})."""
+    try:
+        return await service.create_draft(citizen.id, body.document_id, body.type)
+    except LookupError as e:
+        raise HTTPException(404, "document not found") from e
 
 
 @router.post("/telegram/link")

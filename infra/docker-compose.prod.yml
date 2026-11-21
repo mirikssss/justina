@@ -11,6 +11,8 @@ services:
   api:
     ports: !reset []
     restart: always
+    environment:
+      DOCS_ENABLED: "false"   # T8: /docs и /openapi.json в проде закрыты
   collector:
     restart: always
   guard-worker:

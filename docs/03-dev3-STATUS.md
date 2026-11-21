@@ -73,6 +73,26 @@
 4. ~~**Telegram-бот**~~ ✅ (привязка, тревоги, кнопки с HMAC, код).
 5. **Исполнитель `revoke_car_poa`** (сессия, скриншот, проверка через источник) — последний, нужен живой аккаунт/HAR (см. §13 открытые вопросы).
 
+## Ревью прототипа: T1–T12 (21.11)
+
+| # | Что | Состояние |
+| --- | --- | --- |
+| T1 | Отравленное событие | ✅ `shared.outbox_dead_letter` после 5 попыток, `test_outbox_dead_letter.py` |
+| T2 | Telegram внутри транзакции | ✅ `guard.notify_log`: намерение до отправки, без слепых повторов |
+| T3 | Интеграционные тесты пропускались | ✅ CI с `REQUIRE_DB=1` падает без базы |
+| T4 | Живой `revoke_car_poa` / Vakolat | ⛔ нужен HAR ручного отзыва — без него не пишем вслепую |
+| T5 | `/stream`: соединение на вкладку | ✅ `platform/stream_hub.py`, один LISTEN на процесс |
+| T6 | Outbox под одним advisory lock | ✅ задокументировано как предел прототипа (ARCHITECTURE §5) |
+| T7 | Срок сессии OneID | 📋 чек-лист ARCHITECTURE §12; замер — на месте |
+| T8 | /docs в проде, лимиты | ✅ `DOCS_ENABLED=false`, прокси 404, `shared/ratelimit.py` |
+| T9 | Согласие и удаление данных | ✅ `/me/consent`, `DELETE /me/data` (стирание ключа), экран согласия |
+| T10 | Eval по языкам | ✅ 10 uz + 10 ru, итог по языкам; цифры снять на живом корпусе |
+| T11 | Метрики задержки | ✅ `detected_at`/`sent_at`, «в Telegram за N с», «от подтверждения до результата» |
+| T12 | `/guard/drafts` | ✅ через `assistant.draft_application` |
+
+⚠️ `infra/deploy/deploy.sh` ставит `ENV=dev` в проде — без входа показывается демо-гражданин. Переключить
+на `demo`, когда бот с токеном запущен на сервере (Р2).
+
 ## Запуск бота
 
 `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `CALLBACK_HMAC_KEY` в `.env`, затем `python -m storozh worker bot` (polling)

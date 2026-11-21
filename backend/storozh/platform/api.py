@@ -1,18 +1,19 @@
 """Вход, профиль, поток живых событий (SSE) и журнал аудита."""
 
+import asyncio
 import json
 
-import psycopg
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
-from psycopg.rows import dict_row
+from psycopg import AsyncConnection
+from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
 from storozh.platform import service
 from storozh.platform.service import SESSION_TTL, LoginError
-from storozh.shared import audit, db, outbox
+from storozh.platform.stream_hub import hub
+from storozh.shared import audit, db
 from storozh.shared.auth import SESSION_COOKIE, Citizen, current_citizen
-from storozh.shared.config import settings
 
 router = APIRouter(tags=["platform"])
 
@@ -59,7 +60,7 @@ async def me(citizen: Citizen = Depends(current_citizen)):
     return await service.profile(citizen.id)
 
 
-async def _events_after(conn: psycopg.AsyncConnection, citizen_id, last_seq: int) -> list[dict]:
+async def _events_after(conn: AsyncConnection, citizen_id, last_seq: int) -> list[dict]:
     cur = await conn.execute(
         "SELECT seq, type, payload FROM shared.outbox WHERE seq > %s AND citizen_id = %s AND type = ANY(%s) "
         "ORDER BY seq LIMIT 200",
@@ -68,33 +69,62 @@ async def _events_after(conn: psycopg.AsyncConnection, citizen_id, last_seq: int
     return await cur.fetchall()
 
 
+class ConsentIn(BaseModel):
+    version: str
+
+
+@router.get("/me/consent")
+async def my_consent(citizen: Citizen = Depends(current_citizen)):
+    return await service.get_consent(citizen.id)
+
+
+@router.post("/me/consent")
+async def accept_my_consent(body: ConsentIn, citizen: Citizen = Depends(current_citizen)):
+    try:
+        return await service.accept_consent(citizen.id, body.version)
+    except ValueError as e:
+        raise HTTPException(409, str(e)) from e
+
+
+@router.delete("/me/data", status_code=204)
+async def delete_my_data(citizen: Citizen = Depends(current_citizen)):
+    """T9: криптоудаление данных гражданина и выход со всех устройств."""
+    await service.delete_my_data(citizen.id)
+    resp = Response(status_code=204)
+    resp.delete_cookie(SESSION_COOKIE, path="/", secure=True, httponly=True, samesite="strict")
+    return resp
+
+
 @router.get("/stream")
 async def stream(request: Request, citizen: Citizen = Depends(current_citizen)):
-    """SSE: LISTEN storozh_outbox -> события гражданина; heartbeat 15 с; Last-Event-ID — догнать пропущенное."""
+    """SSE: события гражданина; heartbeat 15 с; Last-Event-ID — догнать пропущенное.
+
+    T5: один LISTEN на процесс (stream_hub) будит подписчика, события он читает из outbox через пул.
+    """
     last_id = request.headers.get("last-event-id")
 
     async def events():
-        conn = await psycopg.AsyncConnection.connect(settings.database_url, autocommit=True,
-                                                     row_factory=dict_row)
+        wake = hub.subscribe(citizen.id)
         try:
-            await conn.execute("SET ROLE storozh_platform")
-            await conn.execute(f"LISTEN {outbox.NOTIFY_CHANNEL}")
-            if last_id and last_id.isdigit():
-                last_seq = int(last_id)
-            else:
-                cur = await conn.execute("SELECT coalesce(max(seq), 0) AS seq FROM shared.outbox")
-                last_seq = (await cur.fetchone())["seq"]
+            async with db.connect("platform") as conn:
+                if last_id and last_id.isdigit():
+                    last_seq = int(last_id)
+                else:
+                    cur = await conn.execute("SELECT coalesce(max(seq), 0) AS seq FROM shared.outbox")
+                    last_seq = (await cur.fetchone())["seq"]
             while not await request.is_disconnected():
-                wake = False
-                async for n in conn.notifies(timeout=HEARTBEAT_S, stop_after=1):
-                    wake = n.payload.endswith(f":{citizen.id}")
-                if not wake:
-                    continue  # чужое событие или тишина (heartbeat шлёт sse-starlette)
-                for row in await _events_after(conn, citizen.id, last_seq):
+                try:
+                    await asyncio.wait_for(wake.wait(), timeout=HEARTBEAT_S)
+                except TimeoutError:
+                    continue  # тишина: heartbeat шлёт sse-starlette, заодно проверяем отключение
+                wake.clear()
+                async with db.connect("platform") as conn:
+                    rows = await _events_after(conn, citizen.id, last_seq)
+                for row in rows:
                     last_seq = row["seq"]
                     yield {"id": str(row["seq"]), "event": row["type"], "data": json.dumps(row["payload"])}
         finally:
-            await conn.close()
+            hub.unsubscribe(citizen.id, wake)
 
     return EventSourceResponse(events(), ping=HEARTBEAT_S)
 

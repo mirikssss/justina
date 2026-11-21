@@ -29,6 +29,7 @@ jobs:
           done
       - run: uv run python -m storozh migrate
       - run: uv run pytest -q               # включая контракт-тесты и интеграцию с базой
+        env: {REQUIRE_DB: "1"}              # T3: без базы падаем, а не пропускаем интеграцию
       - run: uvx pip-audit --strict || true # пока информативно
 
   web:

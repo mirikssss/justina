@@ -7,7 +7,7 @@ import { Badge, Card, EmptyState, Icon, PageHeader, Skeleton } from "@/component
 import type { Schemas } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 
-import { ACTION_FLOW, ACTION_STATUS, ACTION_TYPE, fmtDateTime } from "./labels";
+import { ACTION_FLOW, ACTION_STATUS, ACTION_TYPE, fmtDateTime, secondsBetween } from "./labels";
 import { useAction, useActionLive } from "./queries";
 
 // FR-G-14: ход действия живыми шагами по action.updated (SSE). В конце — «Подтверждено источником»
@@ -23,6 +23,7 @@ export function ActionPage({ id }: { id: string }) {
   const a = q.data;
 
   const reached = new Map(a.steps.map((s) => [s.status, s.at]));
+  const doneIn = secondsBetween(reached.get("confirmed"), reached.get("done")); // T11
   const failed = a.status === "failed";
   const expired = a.status === "expired";
   // Индекс текущего шага в нормальном потоке (для подсветки «идёт сейчас»).
@@ -66,6 +67,7 @@ export function ActionPage({ id }: { id: string }) {
                 <Icon name="check2" size={16} /> {t("Bekor qilindi. Natija manbada tasdiqlandi")}
                 {a.result?.verified_status ? ` (${a.result.verified_status})` : ""}.
               </p>
+              {doneIn !== null ? <p className="note">{t("Tasdiqlashdan natijagacha: {n} s", { n: doneIn })}</p> : null}
               <Evidence id={id} />
             </Card>
           ) : null}
