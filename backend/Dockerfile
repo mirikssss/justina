@@ -13,4 +13,6 @@ CMD ["python", "-m", "storozh", "api"]
 
 # Сборщик и исполнитель действий: + Chromium для Playwright
 FROM base AS browser
-RUN playwright install --with-deps chromium
+# libatomic1 нужен драйверу Playwright, в python:3.12-slim его нет (иначе playwright install падает с кодом 127)
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 && rm -rf /var/lib/apt/lists/* \
+    && playwright install --with-deps chromium

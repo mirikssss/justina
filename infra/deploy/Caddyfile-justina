@@ -1,8 +1,11 @@
-# Блок для Caddyfile, если на сервере Caddy (сертификат выпустит сам)
+# Блок для Caddyfile сервера (/opt/clusteros/infra/server/Caddyfile, контейнер clusteros-caddy-1).
+# Caddy живёт в контейнере в сети clusteros-net: 127.0.0.1 хоста ему не виден, поэтому идём на контейнер
+# justina-web-1, который deploy.sh подключает к clusteros-net. Сертификат Caddy выпустит сам.
+# Применять: caddy validate, затем caddy reload — без рестарта контейнера, чтобы не уронить соседний проект.
 justina.clusteros.co.uz {
     @internal path /api/internal/*
     respond @internal 404
-    reverse_proxy 127.0.0.1:8180 {
+    reverse_proxy justina-web-1:3000 {
         flush_interval -1
     }
 }
