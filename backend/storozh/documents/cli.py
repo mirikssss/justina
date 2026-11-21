@@ -46,6 +46,13 @@ def connect(citizen: UUID = typer.Option(DEV_CITIZEN_ID, help="citizen_id")):
                 await page.wait_for_load_state("networkidle")
             except Exception as e:  # noqa: BLE001 — источник необязательный: без него остальные работают
                 typer.echo(f"Birdarcha не подключён ({type(e).__name__}); источник birdarcha.company останется без сессии.")
+            # Налоговый кабинет (my.soliq.uz): тот же вход OneID; выбор кабинета юрлица делает человек сам.
+            try:
+                await page.goto(settings.soliq_base_url.rstrip("/") + "/legal")
+                await page.wait_for_url(lambda u: "id.egov.uz" not in u and "login" not in u.lower(), timeout=60_000)
+                await page.wait_for_load_state("networkidle")
+            except Exception as e:  # noqa: BLE001
+                typer.echo(f"my.soliq.uz не подключён ({type(e).__name__}); источники soliq.* останутся без сессии.")
             state = await ctx.storage_state()
             await b.close()
         await service.save_session(citizen, dict(state))

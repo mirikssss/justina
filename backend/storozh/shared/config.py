@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     api_internal_url: str = "http://localhost:8000"  # куда сборщик шлёт снимки
     mygov_base_url: str = "https://my.gov.uz"  # для разработки: http://localhost:8765 (макет, documents mockportal)
     birdarcha_base_url: str = "https://new.birdarcha.uz"
+    soliq_base_url: str = "https://my.soliq.uz"
     collector_headless: bool = True  # False — видеть браузер сборщика при отладке
 
     # --- Помощник: RAG по lex.uz ---
