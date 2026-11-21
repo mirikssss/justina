@@ -42,7 +42,9 @@ async def chat(body: ChatIn, citizen: Citizen = Depends(current_citizen)):
     """Ответ потоком SSE: event token (кусок текста), event citations (Citation[]), event done."""
     if not await service.owns_document(body.document_id, citizen.id):
         raise HTTPException(status_code=404, detail="document not found")
-    lang = body.lang or Lang(citizen.lang)
+    from storozh.assistant.rag.corpus.text import detect_lang
+
+    lang = body.lang or Lang(detect_lang(body.message))  # по умолчанию — язык вопроса
     return EventSourceResponse(service.chat_events(body.document_id, citizen.id, body.message, lang))
 
 
