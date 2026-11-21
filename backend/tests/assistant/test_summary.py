@@ -53,3 +53,18 @@ def test_citation_list_accepts_markers_without_brackets():
 
     found, unknown = citations.resolve(["gk1:141", "[[epoa:1-23]]", "uk:5"], HITS)
     assert [c.article for c in found] == ["ст. 141", "п. 23 прил. 1"] and unknown == ["uk:5"]
+
+
+async def test_summary_never_shows_pii_labels(monkeypatch):
+    async def retrieve(queries, kinds=None, k=8, lang=None):
+        return HITS
+
+    class LabelLLM(FakeLLM):
+        async def complete_json(self, system, user, schema, **kw):
+            return {"what_is_it": "Ishonchnoma [NAME_1] nomiga, JShShIR [PINFL_1]", "counterparty_can": ["[NAME_1] boshqaradi"],
+                    "risks": [], "what_to_do": [], "citations": []}
+
+    monkeypatch.setattr(summary, "retrieve", retrieve)
+    s = await summary.summarize(LabelLLM(), DOC, Lang.uz, uuid.uuid4(), 1)
+    assert "[NAME_1]" not in s.what_is_it and "[PINFL_1]" not in s.what_is_it
+    assert s.counterparty_can[0] == f"{DOC.parties[0].name_masked} boshqaradi"  # уже замаскированное имя из карточки
